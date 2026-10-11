@@ -1,3 +1,4 @@
+using KeyChord = AppDock.SDK.InputKeyChord;
 using System.Text.Json;
 using AppDock.SDK;
 using Applets.WindowsTools;
@@ -8,7 +9,6 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args is ["--native-send"]) return NativeSend.Run();
         return Run().GetAwaiter().GetResult();
     }
     private static async Task<int> Run()

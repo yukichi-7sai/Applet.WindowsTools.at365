@@ -40,7 +40,7 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 
 消灯・ロック・待ち時間のテストは模擬APIと仮想時刻を使用します。
 
-`--native-send` を付けると、テスト専用のテキストボックスへCtrl+Aを送って確認します。一時的にテスト画面へフォーカスを移すので、他のUIテストや手操作と同時に実行しないでください。
+実キー送信は本体のscripts/native-input-ui-test.cjsで、発行した.NET Appletから共通API経由で専用ウィンドウへ送信して確認します。従来の単独NativeSend試験はこの統合試験へ置き換えました。GUI/入力試験は直列で実行します。
 
 [scripts/test-host.cjs](scripts/test-host.cjs) は専用プロファイルでAppDockを起動し、設定画面からの追加・変更・削除、動的ホットキーの登録解除、取消、再起動と停止を検証します。NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
 
@@ -48,7 +48,7 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 
 ## 実装上の補足
 
-動的コマンド更新と `shortcut-list` を使います。対応APIはAppDock 0.4.0で導入されています。無操作判定には `GetLastInputInfo`、キー送信には `SendInput` を使用します。送信前の物理キー解放は25ms間隔で確認し、最大2秒待機します。送信後は150msだけ実行中を維持し、ホストのグローバルキー再入防止と組み合わせます。
+動的コマンド更新とshortcut-listを使います。無操作判定はGetLastInputInfoを維持します。0.1.3からキー送信はcontext.AppDock.CallAsyncのinput.sendKeysへ委譲し、キー解析はSDKのInputKeyChordを共有します。最低本体版0.26.37とappdock-api capabilityが必要です。許可・実行文脈・対象変更・取消・再入防止は[本体共通操作API](../AppDock.at365/docs/appdock-api.md)へ集約します。
 
 ## 文書の更新
 

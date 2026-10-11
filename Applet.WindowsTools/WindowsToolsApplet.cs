@@ -20,6 +20,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     public async Task ActivateAsync(IExtensionContext context, CancellationToken token)
     {
         this.context = context;
+        if (platform is WindowsPlatform native) native.AppDock = context.AppDock;
         active = true;
         idle.Reset(platform.Uptime);
         await RefreshSettings(token);

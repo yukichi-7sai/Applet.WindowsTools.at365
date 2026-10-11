@@ -1,5 +1,12 @@
 # 検証記録
 
+## 2026-10-11: 本体共通入力APIへ移行（0.1.3）
+
+- WindowsPlatformのキー送信をinput.sendKeysへ委譲し、InputKeyChordをSDKへ共有。無操作判定・消灯/取消・フォルダー表示・動的ID/キー更新を維持。最低本体0.26.37、appdock-api capabilityと全Applet共通sendInput許可が必要。
+- 通常回帰11/11とhost GUI（host-1791700566681）成功。最終発行DLLを本体最終win-unpackedへ入れ、専用WinFormsへのCtrl+A・許可OFF拒否・許可取消による未送信キャンセルを確認。旧NativeSend単独試験を本体共通入力の統合試験へ置換。
+- publish/update.zip: 14122 bytes、SHA256 31e97f01ed98f1ecd815fb35bf0bdede3eb92962d646d896ddd392d3f5fea4f1。feed一致、DLL/manifest/update.zip/update.jsonをローカル発行。公開・実利用配置・コミットなし。
+- 証跡は[本体validation](../AppDock.at365/.artifacts/native-api-20261011/validation.json)、最終入力native-input-ui-1791701515610。実OSロック/消灯は模擬APIのみで、今回実行していない。テスト残存なし、最新3回/過去参照/失敗不明資料を保持し整理対象なし。
+
 ## 2026-10-11: 公開設定拡充のコミット前確認
 
 - stageしたtree `8b9132ec8adfba9bb0842531b3d152333d910a9d`の標準回帰と発行ホスト/実AppletのGUI・MCPを再実行して成功。壁紙はRPC/発行native EXEも終了0。検証前後の製品・テスト・発行物hash不変を確認し、再発行なし。
@@ -58,3 +65,9 @@
 - 実PCをロックする操作、実ディスプレイの消灯は実行していない。期限計算と停止・取消は模擬APIで検証。
 - 実エクスプローラーの起動、保護されたプロセスの実行ファイル取得、RDP、長時間常駐、スリープ復帰、管理者権限アプリへのキー送信は未検証。
 - 実利用先への配置、設定変更、AppDock mainへのマージ、コミットは未実施。
+
+## 2026-10-11: 共通入力APIのコミット前検証
+
+今回の変更を実装時の記録と照合して固定し、本体276件・型検査、WindowsTools11件、WebBrowserTools2群、両Appletの配布版GUI、固定EXEの新旧SDK/API5群・MCP15群、共通入力4群、物理ジェスチャー17項目、設定UI7群、文書リンク177件を確認しました。製品/発行物の追加変更はありません。実入力試験では想定外Sキー/送信先変化と開始直後の3項目不一致があり、同一内容で再確認後成功。入力外乱の可能性がありますが個別原因は未特定、失敗ログを保持します。実ブラウザーの効果/実OSロック・消灯は対象外。
+
+検証tree: `0c2fb2066e9a6981c023dda3ccf4fd4dce6e0f46`。完全な証跡は本体`.artifacts/commit-validation-native-api-20261011/`（このrepoにも写しを保存）。試験プロセス残存0、既存の最新3回・参照済み検証資料・失敗/不明資料を保持して削除なし。ローカルコミットのみでpushは行いません。
