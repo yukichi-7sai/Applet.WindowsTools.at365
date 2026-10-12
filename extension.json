@@ -20,7 +20,7 @@
     {
       "key": "displayOffSeconds",
       "automation": true,
-      "title": "消灯までの秒数",
+      "title": "ディスプレイが消灯するまでの秒数",
       "type": "number",
       "default": 5,
       "minimum": 1,
@@ -37,7 +37,7 @@
     },
     {
       "key": "autoLockMinutes",
-      "title": "ロックまでの無操作時間（分）",
+      "title": "自動ロックまでの無操作時間（分）",
       "type": "number",
       "default": 360,
       "minimum": 1,
