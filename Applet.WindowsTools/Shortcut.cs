@@ -9,7 +9,7 @@ internal sealed record Shortcut(string Id, string Title, KeyChord Chord)
     public static IReadOnlyList<Shortcut> Parse(JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() > 32)
-            throw new ArgumentException("送信するショートカットは32件以下の一覧で指定してください。");
+            throw new ArgumentException("ショートカットキーの送信は32件以下の一覧で指定してください。");
         var result = new List<Shortcut>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in value.EnumerateArray())
