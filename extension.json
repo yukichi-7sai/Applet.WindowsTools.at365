@@ -3,13 +3,13 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "minimumHostVersion": "0.36.8",
   "updateRepository": "5ynonym/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
   "type": "Applets.WindowsTools.WindowsToolsApplet",
-  "description": "アプリのフォルダー表示、消灯予約、設定したキーの送信、無操作時の自動ロック。動的コマンド対応のAppDockが必要です。",
+  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、アプリのフォルダー表示、消灯予約、キー送信、無操作時の自動ロック。",
   "capabilities": [
     "ui",
     "settings",
@@ -78,6 +78,56 @@
       "settings": [
         "shortcuts"
       ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "at365.windows-tools.open-folder",
+      "title": "最前面アプリの実行ファイルのフォルダーを開く"
+    },
+    {
+      "id": "at365.windows-tools.display-off",
+      "title": "ディスプレイの消灯を予約"
+    },
+    {
+      "id": "at365.windows-tools.cancel-display-off",
+      "title": "ディスプレイの消灯予約を取り消す"
+    },
+    {
+      "id": "at365.windows-tools.toggle-auto-lock",
+      "title": "無操作時の自動ロックを切り替える"
+    },
+    {
+      "id": "at365.windows-tools.left",
+      "title": "ウィンドウを左へ移動"
+    },
+    {
+      "id": "at365.windows-tools.right",
+      "title": "ウィンドウを右へ移動"
+    },
+    {
+      "id": "at365.windows-tools.full-height",
+      "title": "ウィンドウを上下いっぱいに広げる"
+    },
+    {
+      "id": "at365.windows-tools.center",
+      "title": "ウィンドウを画面中央へ移動"
+    },
+    {
+      "id": "at365.windows-tools.minimize",
+      "title": "ウィンドウを最小化"
+    },
+    {
+      "id": "at365.windows-tools.maximize",
+      "title": "ウィンドウを最大化"
+    },
+    {
+      "id": "at365.windows-tools.restore",
+      "title": "ウィンドウを元のサイズに戻す"
+    },
+    {
+      "id": "at365.windows-tools.close",
+      "title": "ウィンドウを閉じる"
     }
   ]
 }

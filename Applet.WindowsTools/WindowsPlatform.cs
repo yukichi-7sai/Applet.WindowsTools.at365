@@ -13,6 +13,7 @@ internal interface IWindowsPlatform
     void OpenForegroundFolder();
     void TurnOffDisplay();
     void Lock();
+    void ExecuteWindow(MoveCommand command, CancellationToken token);
     Task SendAsync(KeyChord chord, CancellationToken token);
 }
 
@@ -50,6 +51,13 @@ internal sealed class WindowsPlatform : IWindowsPlatform
     {
         if (AppDock is null) throw new InvalidOperationException("AppDock入力サービスが未接続です。");
         await AppDock.CallAsync("input.sendKeys", new { keys = chord.ToShortcut() }, token);
+    }
+    public void ExecuteWindow(MoveCommand command, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        // DPI context must be restored on the same thread, without an await.
+        using var dpi = NativeWindows.PhysicalCoordinates();
+        new WindowMover(new NativeWindows()).Execute(command, token);
     }
     private static nint Target()
     {

@@ -14,6 +14,16 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     private bool active, autoLockEnabled;
     private int displaySeconds = 5, lockMinutes = 360;
     private int shortcutCount;
+    private static readonly (string Suffix, string Title, MoveCommand Command)[] WindowCommands = [
+        ("left", "ウィンドウを左へ移動", MoveCommand.Left),
+        ("right", "ウィンドウを右へ移動", MoveCommand.Right),
+        ("full-height", "ウィンドウを上下いっぱいに広げる", MoveCommand.FullHeight),
+        ("center", "ウィンドウを画面中央へ移動", MoveCommand.Center),
+        ("minimize", "ウィンドウを最小化", MoveCommand.Minimize),
+        ("maximize", "ウィンドウを最大化", MoveCommand.Maximize),
+        ("restore", "ウィンドウを元のサイズに戻す", MoveCommand.Restore),
+        ("close", "ウィンドウを閉じる", MoveCommand.Close)
+    ];
     public WindowsToolsApplet() : this(new WindowsPlatform()) { }
     internal WindowsToolsApplet(IWindowsPlatform platform) => this.platform = platform;
 
@@ -49,6 +59,10 @@ public sealed class WindowsToolsApplet : IAppDockExtension
                     autoLockEnabled = enabled; idle.Reset(platform.Uptime); await ShowPanel(ct);
                 })
             };
+            foreach (var command in WindowCommands)
+                commands.Add(Command(command.Suffix, command.Title, ct => {
+                    platform.ExecuteWindow(command.Command, ct); return Task.CompletedTask;
+                }));
             foreach (var shortcut in shortcuts)
                 commands.Add(Command("send." + shortcut.Id, shortcut.Title, ct => platform.SendAsync(shortcut.Chord, ct)));
             await context.Commands.ReplaceAsync(commands, token);
@@ -91,14 +105,17 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     }
 
     private Task ShowPanel(CancellationToken token) => context.Ui.ShowPanelAsync(new Panel("WindowsTools",
-        "フォルダー表示とキー送信は実行時の最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。",
+        "ウィンドウ操作・フォルダー表示・キー送信は最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。ウィンドウ操作をジェスチャーで実行すると開始時のウィンドウを操作します。",
         [new("消灯", display.Due is null ? $"待機中（実行から{displaySeconds}秒後）" : "消灯を予約中（再実行で予約し直し）"),
          new("自動ロック", autoLockEnabled ? $"{lockMinutes}分間、マウス・キーボードの操作がないとロック" : "無効"),
-         new("キー送信", $"{shortcutCount}コマンド。設定の一覧を保存すると追加・削除が反映されます。")],
-        [new("フォルダーを開く", context.ExtensionId + ".open-folder"),
+         new("キー送信", $"{shortcutCount}コマンド。設定の変更で追加・削除が反映されます。"),
+         new("ウィンドウ移動", "左右は中央 → 端 → 隣のモニターの順に移動。高さはタスクバーを除く作業領域に合わせます。"),
+         new("ウィンドウ操作", "最小化・最大化・復元・閉じる。保存確認や終了のキャンセルは対象アプリに従います。")],
+        new PanelAction[] { new("フォルダーを開く", context.ExtensionId + ".open-folder"),
          new("消灯を予約", context.ExtensionId + ".display-off"),
          new("消灯予約を取り消す", context.ExtensionId + ".cancel-display-off"),
-         new("自動ロックを切り替える", context.ExtensionId + ".toggle-auto-lock")]), token);
+         new("自動ロックを切り替える", context.ExtensionId + ".toggle-auto-lock") }
+        .Concat(WindowCommands.Select(command => new PanelAction(command.Title, context.ExtensionId + "." + command.Suffix))).ToArray()), token);
 
     public async Task DeactivateAsync(CancellationToken token)
     {

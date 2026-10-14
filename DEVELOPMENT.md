@@ -40,6 +40,17 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 
 消灯・ロック・待ち時間のテストは模擬APIと仮想時刻を使用します。
 
+発行済みDLLの登録・設定更新・停止と、専用WinFormsウィンドウの実移動を確認できます。
+
+```powershell
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --protocol-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".\publish\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --native-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".\publish\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+```
+
+実移動試験は試験専用ウィンドウだけを操作し、移動・高さ・中央・最大化/復元・最小化・取消可能な通常終了、ジェスチャーの対象固定と元の前面/カーソル保持を確認します。終了時は元のフォーカスへ戻します。GUI試験は直列で実行してください。
+
+Windowsが試験画面へのフォーカス移動を許可しない環境では、`--gesture-native-smoke`で開始対象HWNDを明示する経路を検証できます。この成功を通常の最前面取得経路の成功へ読み替えません。
+
 実キー送信は本体のscripts/native-input-ui-test.cjsで、発行した.NET Appletから共通API経由で専用ウィンドウへ送信して確認します。従来の単独NativeSend試験はこの統合試験へ置き換えました。GUI/入力試験は直列で実行します。
 
 [scripts/test-host.cjs](scripts/test-host.cjs) は専用プロファイルでAppDockを起動し、設定画面からの追加・変更・削除、動的ホットキーの登録解除、取消、再起動と停止を検証します。NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
@@ -47,6 +58,10 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 実測結果は [VERIFICATION.md](VERIFICATION.md) に記載します。
 
 ## 実装上の補足
+
+0.1.5でWindowMoverのWindowLayout/WindowMover/NativeWindowsをこのrepoへ移しています。旧AppletのDLLやソースへの参照は不要です。8つの固定ウィンドウコマンドを既存4コマンドとともに毎回ReplaceAsyncへ渡すため、キー送信設定の追加・削除・名称変更でも消えません。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
+
+Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。本体・SDK・共通操作APIは変更していません。
 
 動的コマンド更新とshortcut-listを使います。無操作判定はGetLastInputInfoを維持します。0.1.3からキー送信はcontext.AppDock.CallAsyncのinput.sendKeysへ委譲し、キー解析はSDKのInputKeyChordを共有します。最低本体版0.26.37とappdock-api capabilityが必要です。許可・実行文脈・対象変更・取消・再入防止は[本体共通操作API](../AppDock.at365/docs/appdock-api.md)へ集約します。
 

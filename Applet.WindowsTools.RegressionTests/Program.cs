@@ -9,11 +9,15 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args is ["--native-smoke", var runner, var assembly]) return NativeSmoke.Run(runner, assembly);
+        if (args is ["--gesture-native-smoke", var gestureRunner, var gestureAssembly]) return NativeSmoke.Run(gestureRunner, gestureAssembly, capturedTarget: true);
+        if (args is ["--protocol-smoke", var protocolRunner, var protocolAssembly]) return NativeSmoke.Protocol(protocolRunner, protocolAssembly);
         return Run().GetAwaiter().GetResult();
     }
     private static async Task<int> Run()
     {
         var tests = new List<(string, Func<Task>)>();
+        WindowMovementTests.AddTo(tests);
         void Test(string name, Action test) => tests.Add((name, () => { test(); return Task.CompletedTask; }));
         Test("shortcut grammar and virtual keys", () => {
             var chord = KeyChord.Parse("Ctrl+Shift+T");
@@ -52,15 +56,15 @@ internal static class Program
         });
         tests.Add(("live add, rename, replace, delete; invalid edit retains commands", async () => {
             var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
-            await applet.ActivateAsync(context, default); Check(context.Handlers.Count == 4);
+            await applet.ActivateAsync(context, default); Check(context.Handlers.Count == 12);
             await context.Change("shortcuts", new[] { new { id = "new-tab", title = "New tab", keys = "Ctrl+T" } });
-            Check(context.Handlers.Count == 5); await context.Execute("send.new-tab"); Check(platform.Sends == 1);
+            Check(context.Handlers.Count == 13); await context.Execute("send.new-tab"); Check(platform.Sends == 1);
             await context.Change("shortcuts", new[] { new { id = "new-tab", title = "Renamed", keys = "Ctrl+N" } });
             Check(context.Titles[context.ExtensionId + ".send.new-tab"] == "Renamed");
             await context.Execute("send.new-tab"); Check(platform.LastChord!.Key == 'N');
             await ThrowsAsync(() => context.Change("shortcuts", new[] { new { id = "new-tab", title = "Broken", keys = "bad" } }));
-            Check(context.Handlers.Count == 5);
-            await context.Change("shortcuts", Array.Empty<object>()); Check(context.Handlers.Count == 4);
+            Check(context.Handlers.Count == 13);
+            await context.Change("shortcuts", Array.Empty<object>()); Check(context.Handlers.Count == 12);
             await applet.DeactivateAsync(default); Check(context.Timer is null && context.Changed is null);
         }));
         tests.Add(("display countdown executes, cancels and stops on deactivate", async () => {
@@ -94,6 +98,26 @@ internal static class Program
             await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".open-folder"](cancellation.Token)); Check(platform.Folders == 1);
             await applet.DeactivateAsync(default);
         }));
+        tests.Add(("all window commands survive settings replacement and stop on deactivate", async () => {
+            var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
+            var suffixes = new[] { "left", "right", "full-height", "center", "minimize", "maximize", "restore", "close" };
+            var commands = new[] { MoveCommand.Left, MoveCommand.Right, MoveCommand.FullHeight, MoveCommand.Center,
+                MoveCommand.Minimize, MoveCommand.Maximize, MoveCommand.Restore, MoveCommand.Close };
+            await applet.ActivateAsync(context, default);
+            Check(context.LastPanel!.Actions!.Count == 12);
+            foreach (var suffix in suffixes) await context.Execute(suffix);
+            Check(platform.WindowCommands.SequenceEqual(commands));
+            await context.Change("displayOffSeconds", 20);
+            await context.Change("shortcuts", new[] { new { id = "left", title = "Send left", keys = "Left" } });
+            foreach (var suffix in suffixes) Check(context.Handlers.ContainsKey(context.ExtensionId + "." + suffix));
+            await context.Execute("send.left"); Check(platform.Sends == 1);
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".close"](cancellation.Token));
+            Check(platform.WindowCommands.Count == 8);
+            var queued = context.Handlers[context.ExtensionId + ".close"];
+            await applet.DeactivateAsync(default); await queued(default);
+            Check(platform.WindowCommands.Count == 8);
+        }));
         var failed = 0;
         foreach (var (name, test) in tests) {
             try { await test(); Console.WriteLine("PASS " + name); }
@@ -109,11 +133,13 @@ internal static class Program
         public long Uptime { get; set; }
         public uint Input;
         public int Offs, Locks, Folders, Sends;
+        public List<MoveCommand> WindowCommands = [];
         public KeyChord? LastChord;
         public uint LastInputTimestamp() => Input;
         public void OpenForegroundFolder() => Folders++;
         public void TurnOffDisplay() => Offs++;
         public void Lock() => Locks++;
+        public void ExecuteWindow(MoveCommand command, CancellationToken token) { token.ThrowIfCancellationRequested(); WindowCommands.Add(command); }
         public Task SendAsync(KeyChord chord, CancellationToken token) { Sends++; LastChord = chord; return Task.CompletedTask; }
     }
     private sealed class FakeContext : IExtensionContext, ICommandService, ISettingsService, IUiService, ISchedulerService
@@ -123,6 +149,7 @@ internal static class Program
         public Dictionary<string, string> Titles = [];
         public Dictionary<string, object> Values = [];
         public Func<CancellationToken, Task>? Changed, Timer;
+        public AppDock.SDK.Panel? LastPanel;
         public ICommandService Commands => this;
         public ISettingsService Settings => this;
         public IUiService Ui => this;
@@ -141,7 +168,7 @@ internal static class Program
         public Task SetAsync<T>(string key, T value, CancellationToken token = default) { Values[key] = value!; return Task.CompletedTask; }
         public IDisposable OnChanged(Func<CancellationToken, Task> handler) { Changed = handler; return new Release(() => Changed = null); }
         public Task SetOptionsAsync(string key, IReadOnlyList<SettingOption> options, CancellationToken token = default) => throw new NotSupportedException();
-        public Task ShowPanelAsync(AppDock.SDK.Panel panel, CancellationToken token = default) => Task.CompletedTask;
+        public Task ShowPanelAsync(AppDock.SDK.Panel panel, CancellationToken token = default) { LastPanel = panel; return Task.CompletedTask; }
         public Task<string> GetImageDirectoryAsync(CancellationToken token = default) => throw new NotSupportedException();
         public IDisposable Every(TimeSpan interval, Func<CancellationToken, Task> callback) { Timer = callback; return new Release(() => Timer = null); }
         public Task Execute(string suffix) => Handlers[ExtensionId + "." + suffix](default);

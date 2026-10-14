@@ -1,11 +1,16 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const { spawn } = require('node:child_process');
+const { createHash } = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const host = path.resolve(process.argv[2] || path.join(root, '../AppDock.at365'));
 const packaged = process.argv[3] ? path.resolve(process.argv[3]) : null;
-const { _electron: electron } = require(path.join(host, 'node_modules/playwright'));
+const { chromium } = require(path.join(host, 'node_modules/playwright'));
+const { freePort } = require(path.join(host, 'scripts/electron-main-helper.cjs'));
 const { createDefaultSettings } = require(path.join(host, 'out/main/shared/settings-schema.js'));
+const { settleSettings } = require(path.join(host, 'scripts/settings-immediate-helper.cjs'));
+const { settingsPage } = require(path.join(host, 'scripts/settings-shell-helper.cjs'));
 const profile = path.join(root, '.artifacts', `host-${Date.now()}`);
 const folder = path.join(profile, 'extensions/Applet.WindowsTools.at365');
 fs.mkdirSync(folder, { recursive: true });
@@ -13,12 +18,14 @@ for (const name of ['extension.json', 'Applet.WindowsTools.at365.dll', 'Applet.W
   fs.copyFileSync(path.join(root, 'publish/Applet.WindowsTools.at365', name), path.join(folder, name));
 const id = 'at365.windows-tools';
 const dynamicId = id + '.send.shortcut-1';
+const windowIds = ['left', 'right', 'full-height', 'center', 'minimize', 'maximize', 'restore', 'close'].map(s => id + '.' + s);
 const settings = createDefaultSettings();
 settings.host.notifications = false;
 settings.extensions[id] = { enabled: true, settings: { displayOffSeconds: 3600, autoLockEnabled: false } };
 settings.keybindings = [{ id: 'test-dynamic-key', command: dynamicId, key: 'Ctrl+Alt+F19', enabled: true, when: { scope: 'global', appletIds: [] } }];
 fs.writeFileSync(path.join(profile, 'settings.json'), JSON.stringify(settings));
-let application;
+let child, browser, page, processOutput = '', success = false;
+const hash = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 async function snapshot(page) { return page.evaluate(() => window.dock.snapshot()); }
 async function until(check, message) {
   const end = Date.now() + 15000;
@@ -28,30 +35,55 @@ async function until(check, message) {
 async function state(page) { return (await snapshot(page)).extensions.find(e => e.id === id); }
 (async () => {
   try {
-    application = await electron.launch({
-      executablePath: packaged || require(path.join(host, 'node_modules/electron')),
-      args: packaged ? [`--test-profile=${profile}`] : [host, `--test-profile=${profile}`], timeout: 30000,
-    });
-    const page = await application.firstWindow();
-    await page.getByRole('heading', { name: 'ホーム', exact: true }).waitFor();
-    await until(async () => (await state(page))?.commands.length === 4 && (await state(page)).state === 'running', 'Initial 4 commands missing');
+    const port = await freePort(), env = { ...process.env };
+    delete env.ELECTRON_RUN_AS_NODE;
+    const executable = packaged ? path.join(profile, 'AppDock.at365.exe') : require(path.join(host, 'node_modules/electron'));
+    if (packaged) {
+      fs.copyFileSync(packaged, executable);
+      assert.equal(hash(executable), hash(packaged), 'Fixed host EXE copy');
+    }
+    child = spawn(executable, [...(packaged ? [] : [host]), `--test-profile=${profile}`,
+      `--test-local-state=${path.join(profile, 'local')}`, `--remote-debugging-port=${port}`],
+      { cwd: host, env, windowsHide: true, stdio: 'pipe' });
+    child.stdout.on('data', data => processOutput += data);
+    child.stderr.on('data', data => processOutput += data);
+    await until(async () => {
+      browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 1000 }).catch(() => null);
+      return browser;
+    }, 'Host CDP connection failed');
+    await until(() => {
+      page = browser.contexts().flatMap(c => c.pages()).find(p => p.url().startsWith('appdock://host/'));
+      return page;
+    }, 'Host page missing');
+    await until(async () => (await state(page))?.commands.length === 12 && (await state(page)).state === 'running', 'Initial 12 commands missing');
     assert.equal((await state(page)).state, 'running');
-    await page.getByRole('button', { name: 'Applet', exact: true }).click();
-    await page.getByRole('button', { name: 'WindowsTools.at365', exact: false }).first().click();
-    await page.getByRole('tab', { name: '設定', exact: true }).click();
-    await page.getByRole('button', { name: 'コマンドを追加', exact: true }).click();
-    await page.getByLabel('ショートカットキーの送信 1 名前', { exact: true }).fill('全選択テスト');
-    await page.getByLabel('ショートカットキーの送信 1 キー', { exact: true }).fill('Ctrl+A');
-    await page.getByRole('button', { name: '変更をすべて保存', exact: true }).click();
+    const checkWindowCommands = async () => {
+      const current = await state(page);
+      for (const command of windowIds) {
+        assert.ok(current.commands.some(c => c.id === command), 'Missing window command: ' + command);
+        assert.ok(current.panel.actions.some(a => a.command === command), 'Missing panel action: ' + command);
+      }
+    };
+    await checkWindowCommands();
+    await page.evaluate(() => window.dock.executeCommand('appdock.settings.open'));
+    const ui = await settingsPage(page);
+    await ui.getByRole('button', { name: 'WindowsTools.at365', exact: false }).first().click();
+    await ui.getByRole('button', { name: 'コマンドを追加', exact: true }).click();
+    await settleSettings(page);
+    await ui.getByLabel('ショートカットキーの送信 1 名前', { exact: true }).fill('全選択テスト');
+    await settleSettings(page);
+    await ui.getByLabel('ショートカットキーの送信 1 キー', { exact: true }).fill('Ctrl+A');
+    await settleSettings(page);
     await until(async () => (await state(page)).commands.some(c => c.id === dynamicId && c.title === '全選択テスト'), 'Dynamic add failed');
     await until(async () => (await snapshot(page)).globalHotKeys.some(h => h.commandId === dynamicId && h.registered), 'Dynamic global binding not registered');
-    await page.screenshot({ path: path.join(profile, 'shortcut-settings.png'), fullPage: true });
-    await page.getByLabel('ショートカットキーの送信 1 名前', { exact: true }).fill('名前の変更テスト');
-    await page.getByRole('button', { name: '変更をすべて保存', exact: true }).click();
+    await ui.screenshot({ path: path.join(profile, 'shortcut-settings.png'), fullPage: true });
+    await ui.getByLabel('ショートカットキーの送信 1 名前', { exact: true }).fill('名前の変更テスト');
+    await settleSettings(page);
     await until(async () => (await state(page)).commands.some(c => c.id === dynamicId && c.title === '名前の変更テスト'), 'Dynamic rename failed');
-    await page.getByRole('button', { name: 'ショートカットキーの送信 1 削除', exact: true }).click();
-    await page.getByRole('button', { name: '変更をすべて保存', exact: true }).click();
-    await until(async () => (await state(page)).commands.length === 4, 'Dynamic delete failed');
+    await ui.getByRole('button', { name: 'ショートカットキーの送信 1 削除', exact: true }).click();
+    await settleSettings(page);
+    await until(async () => (await state(page)).commands.length === 12, 'Dynamic delete failed');
+    await checkWindowCommands();
     await until(async () => !(await snapshot(page)).globalHotKeys.some(h => h.commandId === dynamicId && h.registered), 'Removed hotkey remains registered');
     await assert.rejects(page.evaluate(command => window.dock.executeCommand(command), dynamicId), /利用できません/);
     await require('./settings-mcp-check.cjs')({ host, profile, page, id,
@@ -66,17 +98,35 @@ async function state(page) { return (await snapshot(page)).extensions.find(e => 
     await page.evaluate(command => window.dock.executeCommand(command), id + '.cancel-display-off');
     assert.match((await state(page)).panel.facts[0].value, /待機中/);
     await page.evaluate(extension => window.dock.restartExtension(extension), id);
-    await until(async () => (await state(page)).state === 'running' && (await state(page)).commands.length === 4, 'Restart failed');
+    await until(async () => (await state(page)).state === 'running' && (await state(page)).commands.length === 12, 'Restart failed');
+    await checkWindowCommands();
     await page.evaluate(extension => window.dock.toggleExtension(extension, false), id);
     await until(async () => (await state(page)).state === 'stopped', 'Deactivate failed');
-    assert.equal((await state(page)).commands.length, 0);
+    const stopped = await state(page);
+    assert.equal(stopped.commands.length, 12, 'Manifest command catalog retained while stopped');
+    assert.ok(stopped.commands.every(command => command.available === false), 'Stopped commands unavailable');
     const errors = (await snapshot(page)).logs.filter(entry => entry.level === 'error');
     assert.equal(errors.filter(e => e.source === 'host' && e.message === 'dock:executeCommand: このコマンドは現在利用できません。').length, 1, 'stale command rejection logged once');
     assert.deepEqual(errors.filter(e => !(e.source === 'host' && e.message === 'dock:executeCommand: このコマンドは現在利用できません。')), []);
-    fs.writeFileSync(path.join(profile, 'result.json'), JSON.stringify({ok:true, packaged, checks:['MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime', 'dynamic shortcuts / countdown cancel / lifecycle']}));
+    success = true;
     console.log('PASS live settings add/rename/delete, global registration/removal, rejected stale command, countdown/cancel, restart, deactivate');
     console.log(profile);
   } finally {
-    if (application) await application.close();
+    if (page) await page.evaluate(() => window.dock.executeCommand('appdock.quit')).catch(() => {});
+    if (child) {
+      try {
+        await until(() => child.exitCode !== null, 'Host shutdown failed');
+        assert.equal(child.exitCode, 0, 'Isolated host exit code');
+      }
+      catch (error) { child.kill(); success = false; process.exitCode = 1; console.error(error); }
+    }
+    if (browser) await browser.close().catch(() => {});
+    fs.writeFileSync(path.join(profile, 'process.log'), processOutput);
+    fs.writeFileSync(path.join(profile, 'result.json'), JSON.stringify({ok:success, packaged,
+      hostExitCode: child?.exitCode ?? null,
+      hostHash: packaged ? hash(packaged) : null,
+      appletHash: hash(path.join(folder, 'Applet.WindowsTools.at365.dll')),
+      checks: ['12 fixed commands and panel actions', 'dynamic shortcuts retain window commands',
+        'MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime', 'countdown cancel / restart / stop']}, null, 2));
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
