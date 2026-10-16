@@ -1,7 +1,9 @@
 ﻿param([string]$OutputDirectory, [string]$AppDockRoot)
 $ErrorActionPreference = 'Stop'
 $taskRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$taskOutput = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $taskRoot 'publish\Applet.WindowsTools.at365' }
+. ([IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\AppDock.at365\scripts\publish-paths.ps1')))
+$taskArtifact = Get-PublishDirectory $taskRoot
+$taskOutput = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $taskArtifact 'Applet.WindowsTools.at365' }
 $taskArguments = @('publish', (Join-Path $taskRoot 'Applet.WindowsTools\Applet.WindowsTools.csproj'), '-c', 'Release', '-o', $taskOutput)
 if ($AppDockRoot) { $taskArguments += ('-p:AppDockRoot=' + [IO.Path]::GetFullPath($AppDockRoot)) }
 & dotnet @taskArguments
@@ -17,4 +19,6 @@ foreach ($taskOldName in @('AppDock.SDK.dll', 'AppDock.SDK.pdb')) {
 
 $taskUpdateHostRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\AppDock.at365'))
 if ($AppDockRoot) { $taskUpdateHostRoot = [IO.Path]::GetFullPath($AppDockRoot) }
-& (Join-Path $taskUpdateHostRoot 'scripts\pack-applet-update.ps1') -SourceDirectory $taskOutput -OutputDirectory (Join-Path (Split-Path $PSScriptRoot -Parent) 'publish')
+& (Join-Path $taskUpdateHostRoot 'scripts\pack-applet-update.ps1') -SourceDirectory $taskOutput -OutputDirectory $taskArtifact
+
+Install-PublishedDeployment $taskRoot $taskArtifact

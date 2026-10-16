@@ -1,5 +1,9 @@
 # Applet.WindowsTools.at365 開発ガイド
 
+## 発行・配置ファイルの保存先
+
+標準発行先は `A:\40.ARTIFACT\Applet.WindowsTools.at365` です。`publish.bat`はソースrepo、`deploy.bat`は発行先から実行します。配置用ファイル・設定の保持とテンプレートの更新は[共通発行手順](../AppDock.at365/docs/publishing.md)を参照してください。
+
 実装時のテスト選択、コミット前の必要回帰、リリース前のコミット/プッシュ確認と検証証跡の再利用は、[本体・Applet共通手順](../AppDock.at365/docs/development-workflow.md)に従います。この文書の試験コマンドは、その段階に応じて実行します。
 
 利用方法は[README.md](README.md)、実測結果と未確認事項は[VERIFICATION.md](VERIFICATION.md)を参照してください。
@@ -20,15 +24,15 @@ dotnet build .\Applet.WindowsTools.at365.slnx -c Release
 # ソリューション全体のビルド時は -p:AppDockRoot=... を指定
 ```
 
-発行先は `publish/Applet.WindowsTools.at365/` です。`-OutputDirectory` で変更できます。
+発行先は `A:/40.ARTIFACT/Applet.WindowsTools.at365/Applet.WindowsTools.at365/` です。`-OutputDirectory` で変更できます。
 
 動的コマンド対応版AppDockを終了し、そのEXEがあるフォルダーを指定して配置します。
 
 ```powershell
-.\deploy.bat "A:\Apps\AppDock.at365"
+A:\40.ARTIFACT\Applet.WindowsTools.at365\deploy.bat "A:\Apps\AppDock.at365"
 ```
 
-引数なしの場合は無視対象の `deploy.local.txt` の1行目を使います。[記入例](deploy.local.txt.example)も参照してください。どちらも未指定なら配置しません。`deploy.bat` は既定の発行先からDLL・deps.json・manifestを `extensions/Applet.WindowsTools.at365` へコピーします。AppDock.SDKはホストが供給します。
+引数なしの場合は無視対象の `deploy.local.txt` の1行目を使います。[記入例](deployment/deploy.local.txt.example)も参照してください。どちらも未指定なら配置しません。`deploy.bat` は既定の発行先からDLL・deps.json・manifestを `extensions/Applet.WindowsTools.at365` へコピーします。AppDock.SDKはホストが供給します。
 
 AppDockを起動し直してAppletを有効にしてください。既定では自動ロックは無効、キー送信一覧は空です。実利用環境への配置・自動ロックの有効化はこの実装作業では行っていません。
 
@@ -43,8 +47,8 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 発行済みDLLの登録・設定更新・停止と、専用WinFormsウィンドウの実移動を確認できます。
 
 ```powershell
-dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --protocol-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".\publish\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
-dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --native-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".\publish\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --protocol-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" "A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --native-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" "A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
 ```
 
 実移動試験は試験専用ウィンドウだけを操作し、移動・高さ・中央・最大化/復元・最小化・取消可能な通常終了、ジェスチャーの対象固定と元の前面/カーソル保持を確認します。終了時は元のフォーカスへ戻します。GUI試験は直列で実行してください。
@@ -71,9 +75,9 @@ READMEには動作環境・導入・操作・設定・利用上の制約を記�
 
 ## 更新配布物の発行
 
-`publish.bat`は通常の発行先を生成した後、兄弟のAppDockリポジトリにある`scripts/pack-applet-update.ps1`で`publish/update.json`と`publish/update.zip`を自動生成します。共通パッカーのビルドに.NET 10 SDKが必要です。Gmail以外のAppletは、このパッケージ生成のためにNode.jsを導入する必要はありません。
+`publish.bat`は通常の発行先を生成した後、兄弟のAppDockリポジトリにある`scripts/pack-applet-update.ps1`で`A:/40.ARTIFACT/Applet.WindowsTools.at365/update.json`と`A:/40.ARTIFACT/Applet.WindowsTools.at365/update.zip`を自動生成します。共通パッカーのビルドに.NET 10 SDKが必要です。Gmail以外のAppletは、このパッケージ生成のためにNode.jsを導入する必要はありません。
 
-ZIP直下に`extension.json`と実行ファイル一式を置き、JSONにID・版・必要な本体版・ZIPのサイズとSHA256を記録します。`OutputDirectory`を指定できる発行スクリプトでも、指定先の配布内容を読み、更新用JSON/ZIPの出力先はこのリポジトリの`publish`です。通常配置用サブフォルダーへJSON/ZIPを混ぜず、`deploy.bat`の配置対象も増やしません。
+ZIP直下に`extension.json`と実行ファイル一式を置き、JSONにID・版・必要な本体版・ZIPのサイズとSHA256を記録します。`OutputDirectory`を指定できる発行スクリプトでも、指定先の配布内容を読み、更新用JSON/ZIPの出力先は`A:\40.ARTIFACT\Applet.WindowsTools.at365`です。通常配置用サブフォルダーへJSON/ZIPを混ぜず、`deploy.bat`の配置対象も増やしません。
 
 Web配布やGitHub Releaseには同じ発行で生成したJSONとZIPを一緒に置き、JSONを最後に公開してください。ソースコードの自動生成ZIPは使用しません。発行スクリプトから外部公開は行いません。[共通更新仕様](../AppDock.at365/docs/updates.md)と[配布先の確認手順](../AppDock.at365/docs/update-checklist.md)を参照してください。
 

@@ -1,3 +1,4 @@
+const { getPublishDirectory } = require('../../AppDock.at365/scripts/publish-paths.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -15,7 +16,7 @@ const profile = path.join(root, '.artifacts', `host-${Date.now()}`);
 const folder = path.join(profile, 'extensions/Applet.WindowsTools.at365');
 fs.mkdirSync(folder, { recursive: true });
 for (const name of ['extension.json', 'Applet.WindowsTools.at365.dll', 'Applet.WindowsTools.at365.deps.json'])
-  fs.copyFileSync(path.join(root, 'publish/Applet.WindowsTools.at365', name), path.join(folder, name));
+  fs.copyFileSync(path.join(getPublishDirectory(root), 'Applet.WindowsTools.at365', name), path.join(folder, name));
 const id = 'at365.windows-tools';
 const dynamicId = id + '.send.shortcut-1';
 const windowIds = ['left', 'right', 'full-height', 'center', 'minimize', 'maximize', 'restore', 'close'].map(s => id + '.' + s);
