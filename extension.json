@@ -3,7 +3,7 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "minimumHostVersion": "0.36.8",
   "updateRepository": "5ynonym/Applet.WindowsTools.at365",
   "runtime": "dotnet",

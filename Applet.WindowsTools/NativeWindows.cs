@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
@@ -13,11 +14,19 @@ internal sealed class NativeWindows : IWindowSystem
         if (CommandExecution.Current is not { Source: "gesture" } invocation) return GetForegroundWindow();
         // Never fall back to a different foreground window if the gesture target expired.
         if (!long.TryParse(invocation.Window, NumberStyles.None, CultureInfo.InvariantCulture, out var handle)
-            || handle <= 0 || !uint.TryParse(invocation.Process, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
-            || pid == 0) return 0;
+            || handle <= 0 || string.IsNullOrEmpty(invocation.Process)) return 0;
         var window = new nint(handle);
         GetWindowThreadProcessId(window, out var actual);
-        return actual == pid ? window : 0;
+        if (actual == 0) return 0;
+        // InputHost supplies a process name. Retain support for older numeric callers.
+        if (uint.TryParse(invocation.Process, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
+            && actual == pid) return window;
+        try {
+            using var process = Process.GetProcessById((int)actual);
+            return string.Equals(process.ProcessName, invocation.Process, StringComparison.OrdinalIgnoreCase) ? window : 0;
+        } catch (Exception error) when (error is ArgumentException or InvalidOperationException or Win32Exception) {
+            return 0; // The target can disappear between obtaining the HWND and reading its process.
+        }
     }
     public bool IsMaximized(nint window) => IsZoomed(window);
     public void RequestAction(nint window, WindowAction action)

@@ -67,6 +67,8 @@ Windowsが試験画面へのフォーカス移動を許可しない環境では�
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。本体・SDK・共通操作APIは変更していません。
 
+ジェスチャーのprocessは本体が渡す拡張子なしのプロセス名として、HWNDの所有プロセス名と大文字小文字を区別せず照合します。従来の数値PIDを渡す呼出しも照合して受け付けます。不正なHWND・一致しない名前/PID・消滅した対象では操作せず、別の前面ウィンドウへ切り替えません。NativeSmokeは実際の本体と同じ名前形式で左右移動・高さ調整等を検証します。
+
 動的コマンド更新とshortcut-listを使います。無操作判定はGetLastInputInfoを維持します。0.1.3からキー送信はcontext.AppDock.CallAsyncのinput.sendKeysへ委譲し、キー解析はSDKのInputKeyChordを共有します。最低本体版0.26.37とappdock-api capabilityが必要です。許可・実行文脈・対象変更・取消・再入防止は[本体共通操作API](../AppDock.at365/docs/appdock-api.md)へ集約します。
 
 ## 文書の更新

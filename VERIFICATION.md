@@ -1,5 +1,19 @@
 # 検証記録
 
+## 2026-10-18: ジェスチャー修正のコミット確認（0.1.6）
+
+- コミット依頼に合わせ、今回の6ファイルの差分と対象固定・旧PID互換・プロセス消失時の扱いを再確認し、未解決指摘なし。製品の追加変更はなく0.1.6と発行済みZIP/DLLを維持した。実装時の標準回帰**38/38**はソース・SDK・依存・完全ログ・生成物のSHA256を照合して再利用した。
+- 本体のレイアウト追加修正を含む最終0.59.0 EXE（SHA256 `1f8fdf6b299ba6c15903bf3beeff6b318fe20d529e1f93d05c453c1dbebb4ee8`）で、発行DLLのprotocol/通常前面/ジェスチャー対象smokeと、実OSジェスチャー経由の**右移動・左移動・全高3件**を再実行して成功。ZIPは19648 bytes / SHA256 `2a4d0870f9ceb26b7a01ca5d2e6ced25627284b617d669a19aeffae73559ac3c`を保持し、manifest・feed・DLL版・deploy関連ファイルの一致も再確認した。
+- 証跡は[本体側の検証まとめ](../AppDock.at365/.artifacts/commit-validation-gestures-20261018/validation.json)と、当repoの`.artifacts/commit-validation-gestures-20261018/validation.json`。stage/commit treeの一致、設定済みGitHub/AQUA両mainへの通常push後の先端を記録する。実利用アプリ・UAC・混在DPI・実利用先deployの確認は含まず、Releaseは行わない。
+
+## 2026-10-18: ジェスチャー対象のプロセス名を受け付ける修正（0.1.6）
+
+- AppDock.InputHostのinvocation.processは拡張子なしのプロセス名だったが、WindowsToolsは数値PIDだけを受け付けていた。開始HWNDの所有プロセス名を大文字小文字を区別せず照合するよう修正。従来の数値PID照合も維持し、不正・不一致・消滅した対象では別の前面Windowへフォールバックしない。通常ショートカットの対象取得・移動計算・DPI・取消は維持した。共通SDK/APIや最低ホスト版0.36.8は変更していない。
+- 発行前に対象情報の契約、既存の通常実行、対象消失、設定/APIへの影響をレビューし未解決指摘なし。通常の不具合修正として0.1.6へパッチ更新。Release build/回帰 **38/38**、発行DLLのprotocol smoke、通常前面と名前形式のジェスチャー文脈を使うnative smokeが成功。全8ウィンドウ操作、元の対象固定、名前の大文字小文字、旧PID、不一致名/PID、破棄されたHWND、前面/カーソルの保持を確認した。消灯とPCロックは模擬APIのみ。
+- 最終AppDock 0.59.0 EXEとこの発行DLLを隔離配置し、専用の使い捨てWinForms Windowへ実OSジェスチャーを送る**3件**が成功。右移動は`Left 100 → 2260`、左移動は`100 → 0`、全高は`Top 150/Bottom 550 → 0/2088`で幅600を保持した。試験Windowの重なりと操作後の安定待ちをfixtureで調整した。実利用アプリのWindowは操作していない。
+- 発行終了0。`A:\40.ARTIFACT\Applet.WindowsTools.at365\update.zip`は**19648 bytes / SHA256 `2a4d0870f9ceb26b7a01ca5d2e6ced25627284b617d669a19aeffae73559ac3c`**。DLLのSHA256は`244bf8a683c3804bec760db5acb3d36fd17b5c810c7e5d28c1b2ea0c5b23c415`、AssemblyVersion 0.1.6.0。manifest/feedの版・最低ホスト版・ZIP全3ファイル・発行先deploy関連ファイル保持を照合。commit/push/Release/実利用deployなし。
+- 証跡: [.artifacts/gesture-target-20261018/host-gesture-result.json](.artifacts/gesture-target-20261018/host-gesture-result.json)、同フォルダーの隔離fixtureとスクリプトhash。本体側の[検証まとめ](../AppDock.at365/.artifacts/gesture-behavior-20261018/validation.json)とwindows-regression/windows-protocol/windows-native/windows-gesture-native/published-window-completeのログ・入力hash前後を参照。未変更ソースの回帰結果は最終入力と照合して再利用。本体側の古い成功出力整理以外に当repoの出力は削除していない。手操作、他のアプリ固有制約、UAC、混在DPIは未確認。
+
 ## 2026-10-14: WindowMover統合のコミット前照合
 
 - 実装時の入力37件、成功ログ6件、発行済みDLL/deps.json/manifestと更新ZIPのSHA256を現状と照合し、すべて一致。Releaseビルド、標準回帰38/38、発行済みDLLの接続・実ウィンドウ操作は元の成功結果を再利用した。

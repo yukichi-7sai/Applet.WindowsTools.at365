@@ -79,7 +79,7 @@ internal static class NativeSmoke
                 var foreground = GetForegroundWindow();
                 if (!capturedTarget) Require(foreground == form.Handle, "test window must own foreground before moving");
                 object parameters = capturedTarget
-                    ? new { id = "at365.windows-tools." + suffix, invocation = new { session = "native-" + Guid.NewGuid(), window = form.Handle.ToString(), process = Environment.ProcessId.ToString(), source = "gesture" } }
+                    ? new { id = "at365.windows-tools." + suffix, invocation = new { session = "native-" + Guid.NewGuid(), window = form.Handle.ToString(), process = Process.GetCurrentProcess().ProcessName.ToUpperInvariant(), source = "gesture" } }
                     : new { id = "at365.windows-tools." + suffix };
                 peer.Request("command.execute", parameters);
                 Application.DoEvents();
@@ -118,7 +118,15 @@ internal static class NativeSmoke
                 Require(native.GetRect(other.Handle) == untouched && GetForegroundWindow() == foreground && Cursor.Position == cursor, "gesture preserves alternate foreground and cursor");
                 peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "wrong-process", window = form.Handle.ToString(), process = "0", source = "gesture" } });
                 Require(native.GetRect(form.Handle) == rect && native.GetRect(other.Handle) == untouched, "invalid process does not fall back");
-                Console.WriteLine("PASS gesture original HWND, expired target exclusion, foreground and cursor preservation");
+                peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "wrong-name", window = form.Handle.ToString(), process = "nonexistent-gesture-target", source = "gesture" } });
+                Require(native.GetRect(form.Handle) == rect && native.GetRect(other.Handle) == untouched, "mismatched process name does not fall back");
+                using (var expired = new Form()) {
+                    var expiredHandle = expired.Handle.ToString();
+                    expired.Dispose();
+                    peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "expired", window = expiredHandle, process = Process.GetCurrentProcess().ProcessName, source = "gesture" } });
+                    Require(native.GetRect(form.Handle) == rect && native.GetRect(other.Handle) == untouched, "destroyed target does not fall back");
+                }
+                Console.WriteLine("PASS gesture process name (case-insensitive), legacy PID, mismatched/expired target exclusion, foreground and cursor preservation");
             }
             form.Activate(); SetForegroundWindow(form.Handle);
             if (!capturedTarget) PumpUntil(() => GetForegroundWindow() == form.Handle);
