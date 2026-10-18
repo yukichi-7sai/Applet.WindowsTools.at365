@@ -20,15 +20,15 @@ internal static class NativeSmoke
             CheckCommands(contributions);
             Require(peer.PanelSeen && contributions.GetProperty("tray").GetArrayLength() == 0, "panel and tray registration");
             peer.Request("settings.changed", new { shortcuts = new[] { new { id = "test", title = "Test", keys = "Ctrl+A" } } });
-            Require(peer.RegisteredIds.Length == 13 && peer.RegisteredIds.Contains("at365.windows-tools.left"), "window commands retained on dynamic add");
-            peer.Request("settings.changed", new { shortcuts = Array.Empty<object>() });
-            Require(peer.RegisteredIds.Length == 12, "window commands retained on dynamic delete");
+            Require(peer.RegisteredIds.Length == 12 && !peer.RegisteredIds.Any(id => id.Contains(".send.")), "obsolete key setting never creates commands");
+            peer.Request("settings.changed", new { displayOffSeconds = 20 });
+            Require(peer.RegisteredIds.Length == 12, "all fixed commands retained on settings update");
             peer.Request("deactivate", new { });
             peer.CloseInput();
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 12 commands, dynamic replacement, panel, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine("PASS published DLL: activation, 12 commands, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }

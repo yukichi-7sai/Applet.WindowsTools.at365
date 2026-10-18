@@ -1,4 +1,3 @@
-using System.Text.Json;
 using AppDock.SDK;
 
 namespace Applets.WindowsTools;
@@ -13,7 +12,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     private IDisposable? schedule, settingsSubscription;
     private bool active, autoLockEnabled;
     private int displaySeconds = 5, lockMinutes = 360;
-    private int shortcutCount;
     private static readonly (string Suffix, string Title, MoveCommand Command)[] WindowCommands = [
         ("left", "ウィンドウを左へ移動", MoveCommand.Left),
         ("right", "ウィンドウを右へ移動", MoveCommand.Right),
@@ -30,7 +28,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     public async Task ActivateAsync(IExtensionContext context, CancellationToken token)
     {
         this.context = context;
-        if (platform is WindowsPlatform native) native.AppDock = context.AppDock;
         active = true;
         idle.Reset(platform.Uptime);
         await RefreshSettings(token);
@@ -44,7 +41,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
         try
         {
             if (!active) return;
-            var shortcuts = Shortcut.Parse(context.Settings.Get("shortcuts", JsonSerializer.SerializeToElement(Array.Empty<object>())));
             var commands = new List<CommandRegistration> {
                 Command("open-folder", "最前面アプリの実行ファイルのフォルダーを開く", ct => { platform.OpenForegroundFolder(); return Task.CompletedTask; }),
                 Command("display-off", "ディスプレイの消灯を予約", async ct => {
@@ -63,8 +59,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
                 commands.Add(Command(command.Suffix, command.Title, ct => {
                     platform.ExecuteWindow(command.Command, ct); return Task.CompletedTask;
                 }));
-            foreach (var shortcut in shortcuts)
-                commands.Add(Command("send." + shortcut.Id, shortcut.Title, ct => platform.SendAsync(shortcut.Chord, ct)));
             await context.Commands.ReplaceAsync(commands, token);
             displaySeconds = Math.Clamp(context.Settings.Get("displayOffSeconds", 5), 1, 3600);
             var enabled = context.Settings.Get("autoLockEnabled", false);
@@ -72,7 +66,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             if (enabled != autoLockEnabled || minutes != lockMinutes) idle.Reset(platform.Uptime);
             autoLockEnabled = enabled;
             lockMinutes = minutes;
-            shortcutCount = shortcuts.Count;
             await ShowPanel(token);
         }
         finally { gate.Release(); }
@@ -105,10 +98,9 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     }
 
     private Task ShowPanel(CancellationToken token) => context.Ui.ShowPanelAsync(new Panel("WindowsTools",
-        "ウィンドウ操作・フォルダー表示・キー送信は最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。ウィンドウ操作をジェスチャーで実行すると開始時のウィンドウを操作します。",
+        "ウィンドウ操作・フォルダー表示は最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。ウィンドウ操作をジェスチャーで実行すると開始時のウィンドウを操作します。",
         [new("消灯", display.Due is null ? $"待機中（実行から{displaySeconds}秒後）" : "消灯を予約中（再実行で予約し直し）"),
          new("自動ロック", autoLockEnabled ? $"{lockMinutes}分間、マウス・キーボードの操作がないとロック" : "無効"),
-         new("キー送信", $"{shortcutCount}コマンド。設定の変更で追加・削除が反映されます。"),
          new("ウィンドウ移動", "左右は中央 → 端 → 隣のモニターの順に移動。高さはタスクバーを除く作業領域に合わせます。"),
          new("ウィンドウ操作", "最小化・最大化・復元・閉じる。保存確認や終了のキャンセルは対象アプリに従います。")],
         new PanelAction[] { new("フォルダーを開く", context.ExtensionId + ".open-folder"),

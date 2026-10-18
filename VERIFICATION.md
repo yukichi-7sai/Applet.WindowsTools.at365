@@ -1,5 +1,20 @@
 # 検証記録
 
+## 2026-10-18: 旧キー送信撤去のコミット／プッシュ確認（0.2.0）
+
+- 本体のカスタムコマンド拡張と合わせた依頼により、旧キー送信撤去と関連文書を対象にコミット／プッシュする。実装完了時の24入力に製品の追加変更なし。C#実装／試験と共通SDKの不変を照合し、回帰**35/35**、最終DLLのprotocol／native smokeを再利用した。回帰後のcsproj変更はAssemblyVersionを0.2.0へ更新したものだけ。
+- 既存GUIは本体0.62.0の成功だったため、最終**AppDock 0.62.1**の固定EXEと同じ発行DLLでGUIだけ追加実行して成功（`host-1792322404244`、`1792322403941-7c04b152`）。12固定コマンド、旧UI／send登録の撤去、旧設定／割当の非移行、MCP公開設定、消灯予約の即時取消、再起動／停止と終了0を確認。本体側のhelper／生成schema／EXEも照合し、旧GUIの成功を別EXEへ流用していない。
+- 0.2.0のZIP／DLL／feedは実装完了時のhashを保持し、再発行なし。実消灯・PCロック・実利用アプリ操作は行わず、利用中の設定を変更していない。実装時レビューと今回の差分確認に未解決指摘なし。
+- 証跡は`.artifacts/commit-validation-custom-commands-20261018/validation.json`と本体側同名フォルダー。stage／作業内容／commit treeは`stage.json`・`commit.json`、GitHub／AQUA両mainの通常push後の先端は`push.json`へ記録する。今回の成功profileと既存の再利用資料を保持し、整理結果は`cleanup.json`へ記録。Release・実利用先deployは行わない。
+
+## 2026-10-18: 旧キー送信機能の撤去（0.2.0）
+
+- AppDockの本体カスタムコマンドにキー送信・プロセス起動・共通説明文を追加し、その必要検証が成功した後に旧キー送信機能を撤去。Shortcut／SendAsync／`send.<id>`生成／キー一覧設定・件数UI・専用試験・未使用appdock-api capabilityを削除した。固定12 ID、ウィンドウ操作、消灯予約／取消、自動ロックの設定・実装は維持する。旧設定の移行・清掃・割当の付替えは行わない。
+- 発行前レビューと修正確認で未解決指摘なし。設定項目削除のため0.1.6→**0.2.0**。Release回帰**35/35**（`1792314158058-82b1f510`）、発行DLLのprotocol（`1792315435479-9c8b58df`）・通常前面native smoke（`1792315445913-7e2b2912`）が成功。左右・全高・中央・最大化／復元・最小化・取消可能な終了、開始HWND固定・名前／旧PID・不正対象の除外、前面とカーソル保持、停止／EOF終了を専用Windowで確認した。
+- 最終AppDock **0.62.0固定EXE**と発行DLLを隔離配置したGUI試験が成功（`host-1792315476059`、`1792315475777-fb5b82cb`）。旧キー設定UI／send登録がなく、旧settings／キー割当が保持されて新定義へ変換されないこと、古いIDの実行拒否、12固定コマンド／パネル、MCP公開設定の許可・dryRun・競合・範囲外拒否、消灯予約の即時取消、再起動／停止と終了0を確認。最終画面を目視した。試験helperの参照名修正後に全項目を通した。
+- 通常publish終了0。`A:\40.ARTIFACT\Applet.WindowsTools.at365\update.zip`は**16383 bytes / SHA256 `e0bc845a8cedef6ca6b17b13e7a2f74da148b1aa09f24a12feaeaac1651d72e9`**。DLLは**32256 bytes / SHA256 `1070becc6645ca4445762bcef722e2d10d8e2b06e68a10176622635292358a7f`**、AssemblyVersion/FileVersion **0.2.0.0**。manifest/feed・ZIP全3ファイルと配布フォルダーの一致、固定EXE/DLLコピー、deploy関連ファイル保持を確認した。
+- 証跡は`.artifacts/custom-command-types-20261018/validation.json`と各runのログ・入力hash前後・`assembly.json`、本体側同名フォルダーのartifact/package/ZIP照合・review・cleanup。試験プロセス残存0。今回の成功profileと過去の再利用・失敗・利用状況不明を保持し、フォルダー削除0。実消灯／PCロック／実利用アプリ操作は行わず、利用中設定・認証を変更していない。本体の入力・プロセス起動の結果は[本体検証記録](../AppDock.at365/VERIFICATION.md)を参照。commit/push/Release/実利用deployは未実施。
+
 ## 2026-10-18: ジェスチャー修正のコミット確認（0.1.6）
 
 - コミット依頼に合わせ、今回の6ファイルの差分と対象固定・旧PID互換・プロセス消失時の扱いを再確認し、未解決指摘なし。製品の追加変更はなく0.1.6と発行済みZIP/DLLを維持した。実装時の標準回帰**38/38**はソース・SDK・依存・完全ログ・生成物のSHA256を照合して再利用した。

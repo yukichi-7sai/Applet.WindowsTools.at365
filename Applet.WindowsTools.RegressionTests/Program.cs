@@ -1,8 +1,6 @@
-using KeyChord = AppDock.SDK.InputKeyChord;
 using System.Text.Json;
 using AppDock.SDK;
 using Applets.WindowsTools;
-using Shortcut = Applets.WindowsTools.Shortcut;
 
 internal static class Program
 {
@@ -19,22 +17,6 @@ internal static class Program
         var tests = new List<(string, Func<Task>)>();
         WindowMovementTests.AddTo(tests);
         void Test(string name, Action test) => tests.Add((name, () => { test(); return Task.CompletedTask; }));
-        Test("shortcut grammar and virtual keys", () => {
-            var chord = KeyChord.Parse("Ctrl+Shift+T");
-            Check(chord.Key == 'T' && chord.Modifiers.SequenceEqual(new ushort[] { 0x11, 0x10 }));
-            Check(KeyChord.Parse("Win+Left").Extended);
-            Check(KeyChord.Parse("F24").Key == 0x87);
-            Check(KeyChord.Parse("Alt+F4").Key == 0x73);
-        });
-        Test("reject unknown, repeated and empty keys", () => {
-            foreach (var keys in new[] { "", "Ctrl+", "Ctrl+Ctrl+A", "Ctrl+Control+A", "F25", "%{F4}", "Ctrl+A+B", "Text: hello" })
-                Throws(() => KeyChord.Parse(keys));
-        });
-        Test("shortcut list validates duplicate IDs and format", () => {
-            foreach (var json in new[] { "null", "{}", "[{}]", "[{\"id\":\"bad.id\",\"title\":\"X\",\"keys\":\"A\"}]",
-                "[{\"id\":\"a\",\"title\":\"X\",\"keys\":\"A\"},{\"id\":\"a\",\"title\":\"Y\",\"keys\":\"B\"}]" })
-                Throws(() => Shortcut.Parse(JsonSerializer.Deserialize<JsonElement>(json)));
-        });
         Test("display waits until deadline, runs once", () => {
             var timer = new DisplayCountdown(); timer.Schedule(100, 5);
             Check(!timer.TakeDue(5099)); Check(timer.TakeDue(5100)); Check(!timer.TakeDue(99999));
@@ -54,17 +36,14 @@ internal static class Program
             policy.Reset(start); Check(!policy.TakeDue(start + 59_999, (uint)start, 1));
             Check(policy.TakeDue(start + 60_000, (uint)start, 1));
         });
-        tests.Add(("live add, rename, replace, delete; invalid edit retains commands", async () => {
+        tests.Add(("obsolete key settings stay untouched and never create commands", async () => {
             var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
+            var old = new[] { new { id = "new-tab", title = "Old setting", keys = "invalid old key" } };
+            context.Values["shortcuts"] = old;
             await applet.ActivateAsync(context, default); Check(context.Handlers.Count == 12);
-            await context.Change("shortcuts", new[] { new { id = "new-tab", title = "New tab", keys = "Ctrl+T" } });
-            Check(context.Handlers.Count == 13); await context.Execute("send.new-tab"); Check(platform.Sends == 1);
-            await context.Change("shortcuts", new[] { new { id = "new-tab", title = "Renamed", keys = "Ctrl+N" } });
-            Check(context.Titles[context.ExtensionId + ".send.new-tab"] == "Renamed");
-            await context.Execute("send.new-tab"); Check(platform.LastChord!.Key == 'N');
-            await ThrowsAsync(() => context.Change("shortcuts", new[] { new { id = "new-tab", title = "Broken", keys = "bad" } }));
-            Check(context.Handlers.Count == 13);
-            await context.Change("shortcuts", Array.Empty<object>()); Check(context.Handlers.Count == 12);
+            await context.Change("displayOffSeconds", 20);
+            Check(context.Handlers.Count == 12 && context.Values["shortcuts"] == old);
+            Check(context.Handlers.Keys.All(id => !id.Contains(".send.")));
             await applet.DeactivateAsync(default); Check(context.Timer is null && context.Changed is null);
         }));
         tests.Add(("display countdown executes, cancels and stops on deactivate", async () => {
@@ -108,9 +87,8 @@ internal static class Program
             foreach (var suffix in suffixes) await context.Execute(suffix);
             Check(platform.WindowCommands.SequenceEqual(commands));
             await context.Change("displayOffSeconds", 20);
-            await context.Change("shortcuts", new[] { new { id = "left", title = "Send left", keys = "Left" } });
             foreach (var suffix in suffixes) Check(context.Handlers.ContainsKey(context.ExtensionId + "." + suffix));
-            await context.Execute("send.left"); Check(platform.Sends == 1);
+            Check(context.Handlers.Count == 12);
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
             await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".close"](cancellation.Token));
             Check(platform.WindowCommands.Count == 8);
@@ -126,21 +104,18 @@ internal static class Program
         Console.WriteLine($"{tests.Count - failed}/{tests.Count} passed"); return failed == 0 ? 0 : 1;
     }
     private static void Check(bool value) { if (!value) throw new InvalidOperationException("Assertion failed"); }
-    private static void Throws(Action action) { try { action(); } catch (ArgumentException) { return; } throw new InvalidOperationException("Expected rejection"); }
     private static async Task ThrowsAsync(Func<Task> action) { try { await action(); } catch (Exception) { return; } throw new InvalidOperationException("Expected rejection"); }
     private sealed class FakePlatform : IWindowsPlatform
     {
         public long Uptime { get; set; }
         public uint Input;
-        public int Offs, Locks, Folders, Sends;
+        public int Offs, Locks, Folders;
         public List<MoveCommand> WindowCommands = [];
-        public KeyChord? LastChord;
         public uint LastInputTimestamp() => Input;
         public void OpenForegroundFolder() => Folders++;
         public void TurnOffDisplay() => Offs++;
         public void Lock() => Locks++;
         public void ExecuteWindow(MoveCommand command, CancellationToken token) { token.ThrowIfCancellationRequested(); WindowCommands.Add(command); }
-        public Task SendAsync(KeyChord chord, CancellationToken token) { Sends++; LastChord = chord; return Task.CompletedTask; }
     }
     private sealed class FakeContext : IExtensionContext, ICommandService, ISettingsService, IUiService, ISchedulerService
     {

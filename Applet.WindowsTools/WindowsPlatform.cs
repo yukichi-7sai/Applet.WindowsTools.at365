@@ -1,5 +1,3 @@
-using AppDock.SDK;
-using KeyChord = AppDock.SDK.InputKeyChord;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -14,12 +12,10 @@ internal interface IWindowsPlatform
     void TurnOffDisplay();
     void Lock();
     void ExecuteWindow(MoveCommand command, CancellationToken token);
-    Task SendAsync(KeyChord chord, CancellationToken token);
 }
 
 internal sealed class WindowsPlatform : IWindowsPlatform
 {
-    internal IAppDockService? AppDock { get; set; }
     public long Uptime => Environment.TickCount64;
     public uint LastInputTimestamp()
     {
@@ -46,11 +42,6 @@ internal sealed class WindowsPlatform : IWindowsPlatform
     public void Lock()
     {
         if (!LockWorkStation()) throw new Win32Exception(Marshal.GetLastWin32Error());
-    }
-    public async Task SendAsync(KeyChord chord, CancellationToken token)
-    {
-        if (AppDock is null) throw new InvalidOperationException("AppDock入力サービスが未接続です。");
-        await AppDock.CallAsync("input.sendKeys", new { keys = chord.ToShortcut() }, token);
     }
     public void ExecuteWindow(MoveCommand command, CancellationToken token)
     {

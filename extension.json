@@ -3,19 +3,14 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "minimumHostVersion": "0.36.8",
   "updateRepository": "5ynonym/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
   "type": "Applets.WindowsTools.WindowsToolsApplet",
-  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、アプリのフォルダー表示、消灯予約、キー送信、無操作時の自動ロック。",
-  "capabilities": [
-    "ui",
-    "settings",
-    "dynamic-commands",
-    "appdock-api"
-  ],
+  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、アプリのフォルダー表示、消灯予約、無操作時の自動ロック。",
+  "capabilities": ["ui", "settings", "dynamic-commands"],
   "settings": [
     {
       "key": "displayOffSeconds",
@@ -44,13 +39,6 @@
       "maximum": 1440,
       "step": 1,
       "description": "1〜1440分。変更時には監視時間をリセットします。"
-    },
-    {
-      "key": "shortcuts",
-      "title": "ショートカットキーの送信",
-      "type": "shortcut-list",
-      "default": [],
-      "description": "最大32件。ID・名前・送信キーを追加して保存すると、起動中のコマンド一覧へ反映します。IDは小文字英数字とハイフンで指定してください。"
     }
   ],
   "settingSections": [
@@ -58,26 +46,13 @@
       "id": "display",
       "title": "ディスプレイ",
       "description": "消灯コマンドを実行したあとの待ち時間です。",
-      "settings": [
-        "displayOffSeconds"
-      ]
+      "settings": ["displayOffSeconds"]
     },
     {
       "id": "lock",
       "title": "自動ロック",
       "description": "PCを操作していないときのロックを設定します。",
-      "settings": [
-        "autoLockEnabled",
-        "autoLockMinutes"
-      ]
-    },
-    {
-      "id": "keys",
-      "title": "キー送信コマンド",
-      "description": "よく使うキー操作をコマンドとして登録できます。",
-      "settings": [
-        "shortcuts"
-      ]
+      "settings": ["autoLockEnabled", "autoLockMinutes"]
     }
   ],
   "commands": [
