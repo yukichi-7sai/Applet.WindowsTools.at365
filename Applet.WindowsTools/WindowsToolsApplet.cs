@@ -43,6 +43,8 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             if (!active) return;
             var commands = new List<CommandRegistration> {
                 Command("open-folder", "最前面アプリの実行ファイルのフォルダーを開く", ct => { platform.OpenForegroundFolder(); return Task.CompletedTask; }),
+                Command("lock-windows", "Windowsをロックする", ct => { platform.Lock(); return Task.CompletedTask; },
+                    "Windowsを直ちにロックします。開いているアプリは終了しません。ロックの解除にはWindowsへのサインインが必要です。"),
                 Command("display-off", "ディスプレイの消灯を予約", async ct => {
                     display.Schedule(platform.Uptime, displaySeconds); await ShowPanel(ct);
                 }),
@@ -59,6 +61,9 @@ public sealed class WindowsToolsApplet : IAppDockExtension
                 commands.Add(Command(command.Suffix, command.Title, ct => {
                     platform.ExecuteWindow(command.Command, ct); return Task.CompletedTask;
                 }));
+            foreach (var shortcut in WindowsShortcuts.All)
+                commands.Add(Command(shortcut.Suffix, shortcut.Title,
+                    ct => context.AppDock.CallAsync("input.sendKeys", new { keys = shortcut.Chord.ToShortcut() }, ct), shortcut.CommandDescription));
             await context.Commands.ReplaceAsync(commands, token);
             displaySeconds = Math.Clamp(context.Settings.Get("displayOffSeconds", 5), 1, 3600);
             var enabled = context.Settings.Get("autoLockEnabled", false);
@@ -71,12 +76,12 @@ public sealed class WindowsToolsApplet : IAppDockExtension
         finally { gate.Release(); }
     }
 
-    private CommandRegistration Command(string suffix, string title, Func<CancellationToken, Task> action) =>
+    private CommandRegistration Command(string suffix, string title, Func<CancellationToken, Task> action, string? description = null) =>
         new(context.ExtensionId + "." + suffix, title, async token => {
             await gate.WaitAsync(token);
             try { token.ThrowIfCancellationRequested(); if (active) await action(token); }
             finally { gate.Release(); }
-        });
+        }) { Description = description };
 
     private async Task Tick(CancellationToken token)
     {
@@ -101,6 +106,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
         "ウィンドウ操作・フォルダー表示は最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。ウィンドウ操作をジェスチャーで実行すると開始時のウィンドウを操作します。",
         [new("消灯", display.Due is null ? $"待機中（実行から{displaySeconds}秒後）" : "消灯を予約中（再実行で予約し直し）"),
          new("自動ロック", autoLockEnabled ? $"{lockMinutes}分間、マウス・キーボードの操作がないとロック" : "無効"),
+         new("Windows標準コマンド", $"{WindowsShortcuts.All.Count}コマンド。ショートカット一覧・コマンドパレットから利用できます。対応条件は各コマンドの説明に表示します。"),
          new("ウィンドウ移動", "左右は中央 → 端 → 隣のモニターの順に移動。高さはタスクバーを除く作業領域に合わせます。"),
          new("ウィンドウ操作", "最小化・最大化・復元・閉じる。保存確認や終了のキャンセルは対象アプリに従います。")],
         new PanelAction[] { new("フォルダーを開く", context.ExtensionId + ".open-folder"),

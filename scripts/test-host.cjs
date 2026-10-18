@@ -37,6 +37,9 @@ for (const name of [
     path.join(folder, name),
   );
 const id = "at365.windows-tools";
+const catalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-shortcuts.json'), 'utf8'));
+const fixedCount = 13 + catalog.length;
+const { overlayPage, closingAction } = require(path.join(host, 'scripts/shell-overlay-helper.cjs'));
 const dynamicId = id + ".send.shortcut-1";
 const windowIds = [
   "left",
@@ -131,11 +134,36 @@ async function state(page) {
     }, "Host page missing");
     await until(
       async () =>
-        (await state(page))?.commands.length === 12 &&
+        (await state(page))?.commands.length === fixedCount &&
         (await state(page)).state === "running",
-      "Initial 12 commands missing",
+      "Initial fixed commands missing",
     );
     assert.equal((await state(page)).state, "running");
+    const checkStatic = async () => {
+      const current = await state(page);
+      for (const entry of catalog) {
+        const id = 'at365.windows-tools.windows.' + entry.id;
+        const command = current.commands.find(c => c.id === id);
+        assert.equal(command?.title, entry.title, id);
+        assert.equal(command.description, `送信キー: ${entry.keys}。${entry.description}`, id);
+        assert.notEqual(command.automation, true);
+      }
+      assert.ok(current.commands.some(c => c.id === 'at365.windows-tools.lock-windows'));
+    };
+    await checkStatic();
+    await page.evaluate(() => window.dock.navigate('extensions'));
+    await page.getByRole('complementary', { name: 'Applet一覧' }).getByRole('button', { name: /^WindowsTools/ }).click();
+    await page.getByRole('tab', { name: 'ショートカット', exact: true }).click();
+    const recallRow = page.locator('[data-shortcut-command="at365.windows-tools.windows.recall"]');
+    await recallRow.getByText(/最小システム要件/).waitFor();
+    await recallRow.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(profile, 'static-description.png') });
+    await page.evaluate(() => window.dock.executeCommand('appdock.commands.search'));
+    const overlay = await overlayPage(page);
+    await overlay.getByRole('combobox').fill('最小システム要件');
+    await overlay.locator('[data-command-id="at365.windows-tools.windows.recall"]').getByText(/最小システム要件/).waitFor();
+    await overlay.screenshot({ path: path.join(profile, 'description-search.png') });
+    await closingAction(overlay.keyboard.press('Escape'));
     const checkWindowCommands = async () => {
       const current = await state(page);
       for (const command of windowIds) {
@@ -253,10 +281,11 @@ async function state(page) {
     await until(
       async () =>
         (await state(page)).state === "running" &&
-        (await state(page)).commands.length === 12,
+        (await state(page)).commands.length === fixedCount,
       "Restart failed",
     );
     await checkWindowCommands();
+    await checkStatic();
     await page.evaluate(
       (extension) => window.dock.toggleExtension(extension, false),
       id,
@@ -268,7 +297,7 @@ async function state(page) {
     const stopped = await state(page);
     assert.equal(
       stopped.commands.length,
-      12,
+      fixedCount,
       "Manifest command catalog retained while stopped",
     );
     assert.ok(
@@ -301,7 +330,7 @@ async function state(page) {
     );
     success = true;
     console.log(
-      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 12 fixed commands, rejected stale command, countdown/cancel, restart, deactivate",
+      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 79 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
     );
     console.log(profile);
   } finally {
@@ -332,7 +361,7 @@ async function state(page) {
           hostHash: packaged ? hash(packaged) : null,
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
-            "12 fixed commands and panel actions",
+            "79 fixed commands with static descriptions and panel actions",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
             "countdown cancel / restart / stop",

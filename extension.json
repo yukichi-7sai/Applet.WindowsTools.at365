@@ -3,14 +3,19 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.2.0",
-  "minimumHostVersion": "0.36.8",
+  "version": "0.2.1",
+  "minimumHostVersion": "0.62.3",
   "updateRepository": "5ynonym/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
   "type": "Applets.WindowsTools.WindowsToolsApplet",
-  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、アプリのフォルダー表示、消灯予約、無操作時の自動ロック。",
-  "capabilities": ["ui", "settings", "dynamic-commands"],
+  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、Windows標準ショートカット、アプリのフォルダー表示、消灯予約、Windowsのロック、無操作時の自動ロック。",
+  "capabilities": [
+    "ui",
+    "settings",
+    "dynamic-commands",
+    "appdock-api"
+  ],
   "settings": [
     {
       "key": "displayOffSeconds",
@@ -46,13 +51,18 @@
       "id": "display",
       "title": "ディスプレイ",
       "description": "消灯コマンドを実行したあとの待ち時間です。",
-      "settings": ["displayOffSeconds"]
+      "settings": [
+        "displayOffSeconds"
+      ]
     },
     {
       "id": "lock",
       "title": "自動ロック",
       "description": "PCを操作していないときのロックを設定します。",
-      "settings": ["autoLockEnabled", "autoLockMinutes"]
+      "settings": [
+        "autoLockEnabled",
+        "autoLockMinutes"
+      ]
     }
   ],
   "commands": [
@@ -103,6 +113,341 @@
     {
       "id": "at365.windows-tools.close",
       "title": "ウィンドウを閉じる"
+    },
+    {
+      "id": "at365.windows-tools.lock-windows",
+      "title": "Windowsをロックする",
+      "description": "Windowsを直ちにロックします。開いているアプリは終了しません。ロックの解除にはWindowsへのサインインが必要です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.start-menu",
+      "title": "スタートメニューを開く／閉じる",
+      "description": "送信キー: Win。Windowsのスタートメニューを表示・非表示にします。"
+    },
+    {
+      "id": "at365.windows-tools.windows.quick-settings",
+      "title": "クイック設定を開く",
+      "description": "送信キー: Win+A。Wi-Fi・音量などのクイック設定を開きます。表示内容はWindowsのバージョンによって異なります。"
+    },
+    {
+      "id": "at365.windows-tools.windows.windows-tip",
+      "title": "表示中のWindowsのヒントに移動する",
+      "description": "送信キー: Win+Shift+A。Windowsのヒントが表示されているときに、そのヒントへフォーカスを移します。表示されていなければ何も起きません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.hdr-toggle",
+      "title": "HDRをオン／オフにする",
+      "description": "送信キー: Win+Alt+B。HDR対応のディスプレイと利用環境が必要です。現在のHDR設定を切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.copilot",
+      "title": "CopilotまたはWindows検索を開く",
+      "description": "送信キー: Win+C。Copilotの導入状況とWindowsの設定に従って動作します。Copilotが利用できない場合はWindows検索を開閉します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.date-time",
+      "title": "日付と時刻を表示／非表示にする",
+      "description": "送信キー: Win+Alt+D。デスクトップの日付と時刻の表示を切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-bottom",
+      "title": "ウィンドウを画面の下半分に配置する",
+      "description": "送信キー: Win+Alt+Down。最前面のウィンドウを下半分にスナップします。対応するWindowsとウィンドウで利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.voice-typing-focus",
+      "title": "音声入力のキーボードに移動する",
+      "description": "送信キー: Win+Alt+H。音声入力が開いているときに、キーボードへフォーカスを移します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.microphone-mute",
+      "title": "マイクをミュート／解除する",
+      "description": "送信キー: Win+Alt+K。この操作に対応する通話アプリなどで、マイクのミュート状態を切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-top",
+      "title": "ウィンドウを画面の上半分に配置する",
+      "description": "送信キー: Win+Alt+Up。最前面のウィンドウを上半分にスナップします。対応するWindowsとウィンドウで利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.color-filters",
+      "title": "カラーフィルターをオン／オフにする",
+      "description": "送信キー: Win+Ctrl+C。Windowsの設定でカラーフィルターのショートカットが有効な場合に、フィルターを切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.narrator",
+      "title": "ナレーターを起動／終了する",
+      "description": "送信キー: Win+Ctrl+Enter。Windowsの画面読み上げを切り替えます。ナレーターのショートカットが無効な場合は動作しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.find-computers",
+      "title": "ネットワーク上のデバイスを検索する",
+      "description": "送信キー: Win+Ctrl+F。ネットワーク上のデバイスを探すWindowsの画面を呼び出します。ネットワーク構成によって利用できない場合があります。"
+    },
+    {
+      "id": "at365.windows-tools.windows.quick-assist",
+      "title": "クイックアシストを開く",
+      "description": "送信キー: Win+Ctrl+Q。クイックアシストが必要です。支援用の画面を開きます。画面を開くだけで他の人との接続は始まりません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.previous-input",
+      "title": "直前に使っていた入力方式に戻す",
+      "description": "送信キー: Win+Ctrl+Space。以前に選択していた入力オプションへ切り替えます。複数の入力方式がある場合に利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.sound-output",
+      "title": "サウンド出力の設定を開く",
+      "description": "送信キー: Win+Ctrl+V。対応するWindowsで、出力デバイスや音量ミキサーなどのクイック設定を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.show-desktop",
+      "title": "デスクトップを表示／元に戻す",
+      "description": "送信キー: Win+D。ウィンドウを隠してデスクトップを表示します。もう一度実行すると元の表示に戻します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-down",
+      "title": "ウィンドウを縮小／最小化する",
+      "description": "送信キー: Win+Down。最前面のウィンドウの現在の状態に応じて、最大化を解除するか最小化します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.explorer",
+      "title": "エクスプローラーを開く",
+      "description": "送信キー: Win+E。Windowsのエクスプローラーを開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.magnifier-close",
+      "title": "拡大鏡を終了する",
+      "description": "送信キー: Win+Escape。Windowsの拡大鏡が起動している場合に終了します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.feedback-hub",
+      "title": "フィードバックHubを開く",
+      "description": "送信キー: Win+F。フィードバックHubが必要です。Windowsへの意見や問題を送るための画面を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.ime-reconvert",
+      "title": "IMEで文字を再変換する",
+      "description": "送信キー: Win+Slash。入力中のアプリでIMEの再変換を呼び出します。対応するIMEと変換対象の文字が必要です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.game-bar",
+      "title": "Game Barを開く",
+      "description": "送信キー: Win+G。Game Barがインストールされ、有効になっている場合に開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.voice-typing",
+      "title": "音声入力を開く",
+      "description": "送信キー: Win+H。Windowsの音声入力を開きます。文字を入力できる場所と、音声入力に対応する環境が必要です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.minimize-others",
+      "title": "他のウィンドウを最小化／元に戻す",
+      "description": "送信キー: Win+Home。最前面のウィンドウを残して他のウィンドウを最小化します。もう一度実行すると戻します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.settings",
+      "title": "Windowsの設定を開く",
+      "description": "送信キー: Win+I。Windowsの設定アプリを開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.recall",
+      "title": "Recallを開く",
+      "description": "送信キー: Win+J。Recallの最小システム要件を満たし、機能が利用可能なPCで動作します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.cast",
+      "title": "ワイヤレスディスプレイへの接続を開く",
+      "description": "送信キー: Win+K。Windowsのキャスト画面を開きます。実際の接続には対応するPCとディスプレイが必要です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-left",
+      "title": "ウィンドウを画面の左側に配置する",
+      "description": "送信キー: Win+Left。最前面のウィンドウをWindowsのスナップ機能で左側に配置します。既存の「左へ移動」とは異なる操作です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.minimize-all",
+      "title": "すべてのウィンドウを最小化する",
+      "description": "送信キー: Win+M。デスクトップ上のウィンドウをまとめて最小化します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.magnifier-out",
+      "title": "拡大鏡の倍率を下げる",
+      "description": "送信キー: Win+Minus。Windowsの拡大鏡を使用中に表示倍率を下げます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.notification-center",
+      "title": "Windowsの通知と予定表を開く",
+      "description": "送信キー: Win+N。対応するWindowsで、通知センターと予定表を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.orientation-lock",
+      "title": "画面の自動回転をロック／解除する",
+      "description": "送信キー: Win+O。画面の自動回転に対応する端末で、向きのロックを切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.project",
+      "title": "ディスプレイの表示モードを選ぶ",
+      "description": "送信キー: Win+P。複製・拡張などを選ぶWindowsの投影メニューを開きます。メニューを開くだけでは表示モードを変更しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.system-about",
+      "title": "Windowsのバージョン情報を開く",
+      "description": "送信キー: Win+Pause。Windowsの設定にあるシステムのバージョン情報を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.emoji-period",
+      "title": "絵文字パネルを開く（Win＋ピリオド）",
+      "description": "送信キー: Win+Period。絵文字などを選ぶWindowsの入力パネルを開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.emoji-semicolon",
+      "title": "絵文字パネルを開く（Win＋セミコロン）",
+      "description": "送信キー: Win+Semicolon。絵文字などを選ぶWindowsの入力パネルを開きます。記号のキー位置は送信先のキーボード配列に従います。"
+    },
+    {
+      "id": "at365.windows-tools.windows.magnifier-in",
+      "title": "拡大鏡を起動／倍率を上げる",
+      "description": "送信キー: Win+Plus。Windowsの拡大鏡を開き、表示倍率を上げます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.screenshot-file",
+      "title": "画面全体のスクリーンショットを保存する",
+      "description": "送信キー: Win+PrintScreen。画面全体を撮影し、Windowsのピクチャ内のスクリーンショット保存先へ画像を保存します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.search-q",
+      "title": "Windows検索を開く（Win＋Q）",
+      "description": "送信キー: Win+Q。Windowsの検索画面を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.run",
+      "title": "ファイル名を指定して実行を開く",
+      "description": "送信キー: Win+R。実行するファイル名やコマンドを入力するWindowsのダイアログを開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-right",
+      "title": "ウィンドウを画面の右側に配置する",
+      "description": "送信キー: Win+Right。最前面のウィンドウをWindowsのスナップ機能で右側に配置します。既存の「右へ移動」とは異なる操作です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.search-s",
+      "title": "Windows検索を開く（Win＋S）",
+      "description": "送信キー: Win+S。Windowsの検索画面を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.restore-height",
+      "title": "ウィンドウのスナップ／最大化を解除する",
+      "description": "送信キー: Win+Shift+Down。最前面のウィンドウがスナップ・最大化されている場合に、通常の表示へ戻します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.uwp-fullscreen",
+      "title": "UWPアプリを全画面表示にする",
+      "description": "送信キー: Win+Shift+Enter。最前面がこの操作に対応するUWPアプリの場合に、全画面表示を切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.monitor-left",
+      "title": "ウィンドウを左のモニターへ移す",
+      "description": "送信キー: Win+Shift+Left。複数のモニターを接続している場合に、最前面のウィンドウを左側のモニターへ移します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.restore-all",
+      "title": "最小化したウィンドウを元に戻す",
+      "description": "送信キー: Win+Shift+M。Windowsでまとめて最小化したウィンドウを復元します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.screen-record",
+      "title": "画面の範囲を選んで録画する",
+      "description": "送信キー: Win+Shift+R。対応するSnipping Toolで録画範囲の選択を開始します。録画はWindows側の設定により動画フォルダーへ保存されます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.monitor-right",
+      "title": "ウィンドウを右のモニターへ移す",
+      "description": "送信キー: Win+Shift+Right。複数のモニターを接続している場合に、最前面のウィンドウを右側のモニターへ移します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.screen-snip",
+      "title": "画面の範囲を選んで撮影する",
+      "description": "送信キー: Win+Shift+S。Snipping Toolで撮影する範囲を選び、スクリーンショットを取得します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.input-previous",
+      "title": "前の入力言語／キーボード配列に切り替える",
+      "description": "送信キー: Win+Shift+Space。登録済みの入力言語やキーボード配列を逆順に切り替えます。複数の入力方式がある場合に利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.stretch-height",
+      "title": "ウィンドウを画面の上下いっぱいに広げる",
+      "description": "送信キー: Win+Shift+Up。Windowsの機能で、最前面のデスクトップウィンドウを縦方向に広げます。対応するウィンドウで利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.cycle-notifications",
+      "title": "通知を順番に切り替える",
+      "description": "送信キー: Win+Shift+V。Windowsの通知へ順番にフォーカスを移します。対象になる通知が必要です。"
+    },
+    {
+      "id": "at365.windows-tools.windows.input-next",
+      "title": "次の入力言語／キーボード配列に切り替える",
+      "description": "送信キー: Win+Space。登録済みの入力言語やキーボード配列を順方向に切り替えます。複数の入力方式がある場合に利用できます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.task-view",
+      "title": "ウィンドウと仮想デスクトップの一覧を開く",
+      "description": "送信キー: Win+Tab。Windowsのタスクビューを開きます。2つの対象一覧にある同じキー操作を1コマンドにまとめています。"
+    },
+    {
+      "id": "at365.windows-tools.windows.accessibility",
+      "title": "Windowsのアクセシビリティ設定を開く",
+      "description": "送信キー: Win+U。見やすさ・操作のしやすさを調整するWindowsの設定を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.maximize",
+      "title": "ウィンドウを最大化する（Windows標準）",
+      "description": "送信キー: Win+Up。Windowsのキー操作で、最前面のウィンドウを最大化します。"
+    },
+    {
+      "id": "at365.windows-tools.windows.clipboard",
+      "title": "クリップボードの履歴を開く",
+      "description": "送信キー: Win+V。Windowsのクリップボード履歴を開きます。履歴が無効な場合はWindowsの案内が表示され、必要なら利用者が有効にできます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.widgets",
+      "title": "ウィジェットを開く",
+      "description": "送信キー: Win+W。Windowsのウィジェットが利用可能な環境で開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.quick-link",
+      "title": "スタートのクイックリンクメニューを開く",
+      "description": "送信キー: Win+X。スタートボタンを右クリックしたときと同じWindowsのメニューを開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.mixed-reality-input",
+      "title": "Mixed Realityとデスクトップの入力を切り替える",
+      "description": "送信キー: Win+Y。Windows Mixed Realityを利用できる旧環境向けです。Windows 11 24H2以降ではMixed Realityが削除されています。"
+    },
+    {
+      "id": "at365.windows-tools.windows.snap-layouts",
+      "title": "ウィンドウの配置レイアウトを選ぶ",
+      "description": "送信キー: Win+Z。対応するWindowsとウィンドウで、スナップレイアウトの候補を開きます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.desktop-add",
+      "title": "仮想デスクトップを追加する",
+      "description": "送信キー: Win+Ctrl+D。新しい仮想デスクトップを作成して切り替えます。"
+    },
+    {
+      "id": "at365.windows-tools.windows.desktop-right",
+      "title": "右の仮想デスクトップに切り替える",
+      "description": "送信キー: Win+Ctrl+Right。右隣の仮想デスクトップへ移ります。切り替え先がなければ何も起きません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.desktop-left",
+      "title": "左の仮想デスクトップに切り替える",
+      "description": "送信キー: Win+Ctrl+Left。左隣の仮想デスクトップへ移ります。切り替え先がなければ何も起きません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.desktop-close",
+      "title": "現在の仮想デスクトップを閉じる",
+      "description": "送信キー: Win+Ctrl+F4。現在の仮想デスクトップを閉じます。開いているアプリは終了せず、別の仮想デスクトップへ移ります。"
     }
   ]
 }

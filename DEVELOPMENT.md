@@ -8,6 +8,12 @@
 
 利用方法は[README.md](README.md)、実測結果と未確認事項は[VERIFICATION.md](VERIFICATION.md)を参照してください。
 
+## Windows標準コマンド
+
+[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。定義の正本はwindows-shortcuts.jsonで、DLLへの埋め込みとmanifest/一覧の生成を共用します。静的66件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは79件です。旧キー送信一覧とsend.<id>は復活させません。
+
+定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.62.3です。
+
 ## キー送信機能の撤去
 
 0.2.0で、このAppletのキー送信設定・`send.<id>`生成・Shortcut・SendAsync・件数表示を撤去した。本体のカスタムコマンドへキー送信種類を追加し、必要な実入力検証が通った後に撤去した。[拡張設計](../AppDock.at365/docs/custom-command-types-design.md)と[実装計画](../AppDock.at365/docs/custom-command-types-implementation-plan.md)を参照する。旧設定の移行・旧ID互換・割当の自動付替え・自動清掃は行わない。12固定コマンドと、ウィンドウ操作・消灯予約／取消・自動ロックは維持する。
@@ -59,21 +65,21 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --nativ
 
 Windowsが試験画面へのフォーカス移動を許可しない環境では、`--gesture-native-smoke`で開始対象HWNDを明示する経路を検証できます。この成功を通常の最前面取得経路の成功へ読み替えません。
 
-キー送信は本体のscripts/native-input-ui-test.cjsとshortcut-foreground-ui-test.cjsで、このAppletなしの本体種類と共通入力サービスを確認します。このrepoにはキー送信専用の試験を置きません。GUI/入力試験は直列で実行します。
+キー送信は本体のscripts/native-input-ui-test.cjsとshortcut-foreground-ui-test.cjsで、このAppletなしの本体種類と共通入力サービスを確認します。このrepoでは静的66件の共通APIへの委譲を模擬試験で確認します。GUI/入力試験は直列で実行します。
 
-[scripts/test-host.cjs](scripts/test-host.cjs) は専用プロファイルでAppDockを起動し、旧キー設定UIとsendコマンドがなく、旧設定・割り当てを変換しないこと、12コマンド、消灯予約の即時取消、設定変更、再起動と停止を検証します。NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
+[scripts/test-host.cjs](scripts/test-host.cjs) は専用プロファイルでAppDockを起動し、旧キー設定UIとsendコマンドがなく、旧設定・割り当てを変換しないこと、79固定コマンドと説明の表示・検索、消灯予約の即時取消、設定変更、再起動と停止を検証します。NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
 
 実測結果は [VERIFICATION.md](VERIFICATION.md) に記載します。
 
 ## 実装上の補足
 
-WindowLayout/WindowMover/NativeWindowsはこのrepoで所有し、旧WindowMoverのDLLやソースへの参照は不要です。8つの固定ウィンドウコマンドを他の4コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も12件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
+WindowLayout/WindowMover/NativeWindowsはこのrepoで所有し、旧WindowMoverのDLLやソースへの参照は不要です。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も79件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。本体・SDK・共通操作APIは変更していません。
 
 ジェスチャーのprocessは本体が渡す拡張子なしのプロセス名として、HWNDの所有プロセス名と大文字小文字を区別せず照合します。従来の数値PIDを渡す呼出しも照合して受け付けます。不正なHWND・一致しない名前/PID・消滅した対象では操作せず、別の前面ウィンドウへ切り替えません。NativeSmokeは実際の本体と同じ名前形式で左右移動・高さ調整等を検証します。
 
-dynamic-commands capabilityは固定12件のReplaceAsyncに使用します。キー送信用のappdock-api capabilityは廃止しました。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。本体の入力API・SDK自体は残します。
+dynamic-commands capabilityは固定79件のReplaceAsyncに使用します。appdock-api capabilityはWindows標準コマンドから共通入力APIを呼ぶために使用し、旧キー送信一覧には接続しません。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
 
 ## 文書の更新
 
@@ -99,4 +105,4 @@ GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みま�
 
 ## 設定画面の構成
 
-`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.36.8です。
+`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.62.3です。

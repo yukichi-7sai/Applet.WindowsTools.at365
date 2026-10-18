@@ -6,11 +6,12 @@ using Applets.WindowsTools;
 
 internal static class NativeSmoke
 {
-    private static readonly string[] Suffixes = ["cancel-display-off", "center", "close", "display-off", "full-height", "left",
-        "maximize", "minimize", "open-folder", "restore", "right", "toggle-auto-lock"];
+    private static readonly string[] Suffixes = new[] {"cancel-display-off", "center", "close", "display-off", "full-height", "left",
+        "maximize", "minimize", "open-folder", "restore", "right", "toggle-auto-lock", "lock-windows" }
+        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Order().ToArray();
     private static void CheckCommands(JsonElement contributions) => Require(
         contributions.GetProperty("commands").EnumerateArray().Select(c => c.GetProperty("id").GetString()).Order()
-        .SequenceEqual(Suffixes.Select(s => "at365.windows-tools." + s)), "all 12 command registrations");
+        .SequenceEqual(Suffixes.Select(s => "at365.windows-tools." + s)), "all fixed command registrations");
     public static int Protocol(string runner, string assembly)
     {
         try
@@ -19,16 +20,24 @@ internal static class NativeSmoke
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
             Require(peer.PanelSeen && contributions.GetProperty("tray").GetArrayLength() == 0, "panel and tray registration");
+            foreach (var shortcut in WindowsShortcuts.All) {
+                var registration = contributions.GetProperty("commands").EnumerateArray()
+                    .Single(c => c.GetProperty("id").GetString() == "at365.windows-tools." + shortcut.Suffix);
+                Require(registration.GetProperty("description").GetString() == shortcut.CommandDescription, "static command description");
+                peer.Request("command.execute", new { id = "at365.windows-tools." + shortcut.Suffix });
+                Require(peer.SentKeys[^1] == shortcut.Keys, "static key delegation");
+            }
+            Require(peer.SentKeys.Count == WindowsShortcuts.All.Count, "one API call per static command");
             peer.Request("settings.changed", new { shortcuts = new[] { new { id = "test", title = "Test", keys = "Ctrl+A" } } });
-            Require(peer.RegisteredIds.Length == 12 && !peer.RegisteredIds.Any(id => id.Contains(".send.")), "obsolete key setting never creates commands");
+            Require(peer.RegisteredIds.Length == Suffixes.Length && !peer.RegisteredIds.Any(id => id.Contains(".send.")), "obsolete key setting never creates commands");
             peer.Request("settings.changed", new { displayOffSeconds = 20 });
-            Require(peer.RegisteredIds.Length == 12, "all fixed commands retained on settings update");
+            Require(peer.RegisteredIds.Length == Suffixes.Length, "all fixed commands retained on settings update");
             peer.Request("deactivate", new { });
             peer.CloseInput();
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 12 commands, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine("PASS published DLL: activation, 79 commands and descriptions, 66 input delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -72,7 +81,7 @@ internal static class NativeSmoke
             CheckCommands(contributions);
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "no tray registrations");
             Require(peer.PanelSeen, "panel registration");
-            Console.WriteLine("PASS published DLL activation, 12 commands, panel, no tray");
+            Console.WriteLine("PASS published DLL activation, 79 commands, panel, no tray");
             var cursor = Cursor.Position;
             void Execute(string suffix, bool preservesForeground = true)
             {
@@ -184,6 +193,7 @@ internal static class NativeSmoke
         private int sequence;
         public bool PanelSeen { get; private set; }
         public string[] RegisteredIds { get; private set; } = [];
+        public List<string> SentKeys { get; } = [];
         public Runner(string executable, string assembly)
         {
             var start = new ProcessStartInfo(executable) {
@@ -209,14 +219,21 @@ internal static class NativeSmoke
                 var message = document.RootElement;
                 if (message.TryGetProperty("method", out var request))
                 {
+                    object? result = null;
                     switch (request.GetString()) {
                         case "host.ui.panel": PanelSeen = true; break;
                         case "host.commands.replace":
                             RegisteredIds = message.GetProperty("params").GetProperty("commands").EnumerateArray()
                                 .Select(c => c.GetProperty("id").GetString()!).ToArray(); break;
+                        case "host.appdock.call":
+                            var apiParameters = message.GetProperty("params");
+                            Require(apiParameters.GetProperty("method").GetString() == "input.sendKeys", "only shared input API");
+                            SentKeys.Add(apiParameters.GetProperty("params").GetProperty("keys").GetString()!);
+                            result = new { ok = true, value = new { completion = "inputSubmitted", effectVerified = false } };
+                            break;
                         default: throw new InvalidOperationException("unexpected host API call: " + request.GetString());
                     }
-                    Send(new { jsonrpc = "2.0", id = message.GetProperty("id").GetString(), result = (object?)null });
+                    Send(new { jsonrpc = "2.0", id = message.GetProperty("id").GetString(), result });
                     continue;
                 }
                 Require(message.GetProperty("id").GetString() == id, "RPC response ID");
