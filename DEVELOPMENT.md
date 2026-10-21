@@ -12,13 +12,9 @@
 
 ## Windows標準コマンド
 
-[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。定義の正本はwindows-shortcuts.jsonで、DLLへの埋め込みとmanifest/一覧の生成を共用します。静的66件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは79件です。旧キー送信一覧とsend.<id>は復活させません。
+[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。定義の正本はwindows-shortcuts.jsonで、DLLへの埋め込みとmanifest/一覧の生成を共用します。静的66件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは79件です。
 
 定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.62.3です。
-
-## キー送信機能の撤去
-
-0.2.0で、このAppletのキー送信設定・`send.<id>`生成・Shortcut・SendAsync・件数表示を撤去した。本体のカスタムコマンドへキー送信種類を追加し、必要な実入力検証が通った後に撤去した。[拡張設計](../AppDock.at365/docs/custom-command-types-design.md)と[実装計画](../AppDock.at365/docs/custom-command-types-implementation-plan.md)を参照する。旧設定の移行・旧ID互換・割当の自動付替え・自動清掃は行わない。12固定コマンドと、ウィンドウ操作・消灯予約／取消・自動ロックは維持する。
 
 ## ビルド・配置
 
@@ -69,35 +65,19 @@ Windowsが試験画面へのフォーカス移動を許可しない環境では�
 
 キー送信は本体のscripts/native-input-ui-test.cjsとshortcut-foreground-ui-test.cjsで、このAppletなしの本体種類と共通入力サービスを確認します。このrepoでは静的66件の共通APIへの委譲を模擬試験で確認します。GUI/入力試験は直列で実行します。
 
-[scripts/test-host.cjs](scripts/test-host.cjs) は専用プロファイルでAppDockを起動し、旧キー設定UIとsendコマンドがなく、旧設定・割り当てを変換しないこと、79固定コマンドと説明の表示・検索、消灯予約の即時取消、設定変更、再起動と停止を検証します。NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
+NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホストソースのパス、第2引数に配布版EXEのパスを指定すると配布版でも検証できます。
 
 実測結果は [VERIFICATION.md](VERIFICATION.md) に記載します。
 
 ## 実装上の補足
 
-WindowLayout/WindowMover/NativeWindowsはこのrepoで所有し、旧WindowMoverのDLLやソースへの参照は不要です。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も79件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
+WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も79件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。本体・SDK・共通操作APIは変更していません。
 
 ジェスチャーのprocessは本体が渡す拡張子なしのプロセス名として、HWNDの所有プロセス名と大文字小文字を区別せず照合します。従来の数値PIDを渡す呼出しも照合して受け付けます。不正なHWND・一致しない名前/PID・消滅した対象では操作せず、別の前面ウィンドウへ切り替えません。NativeSmokeは実際の本体と同じ名前形式で左右移動・高さ調整等を検証します。
 
-dynamic-commands capabilityは固定79件のReplaceAsyncに使用します。appdock-api capabilityはWindows標準コマンドから共通入力APIを呼ぶために使用し、旧キー送信一覧には接続しません。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
-
-## 文書の更新
-
-READMEにはインストール方法とビルド方法だけを簡潔に記載します。機能・操作・設定・既定値・動作環境・制約はdocs/usage.md、開発環境・テスト・発行・開発者用配置・実装はこのファイル、実測結果と未検証事項はVERIFICATION.mdへ記載します。共通方針は[AppDockのドキュメント方針](../AppDock.at365/docs/documentation.md)を参照してください。
-
-## 更新配布物の発行
-
-`publish.bat`は通常の発行先を生成した後、兄弟のAppDockリポジトリにある`scripts/pack-applet-update.ps1`で`A:/40.ARTIFACT/Applet.WindowsTools.at365/update.json`と`A:/40.ARTIFACT/Applet.WindowsTools.at365/update.zip`を自動生成します。共通パッカーのビルドに.NET 10 SDKが必要です。Gmail以外のAppletは、このパッケージ生成のためにNode.jsを導入する必要はありません。
-
-ZIP直下に`extension.json`と実行ファイル一式を置き、JSONにID・版・必要な本体版・ZIPのサイズとSHA256を記録します。`OutputDirectory`を指定できる発行スクリプトでも、指定先の配布内容を読み、更新用JSON/ZIPの出力先は`A:\40.ARTIFACT\Applet.WindowsTools.at365`です。通常配置用サブフォルダーへJSON/ZIPを混ぜず、`deploy.bat`の配置対象も増やしません。
-
-Web配布やGitHub Releaseには同じ発行で生成したJSONとZIPを一緒に置き、JSONを最後に公開してください。ソースコードの自動生成ZIPは使用しません。発行スクリプトから外部公開は行いません。[共通更新仕様](../AppDock.at365/docs/updates.md)と[配布先の確認手順](../AppDock.at365/docs/update-checklist.md)を参照してください。
-
-## 開発生成物の保存先
-
-開発・テストの生成物は`.artifacts`へ保存します。2026-10-10に旧`artifacts`を中身を保持して改名しました。過去の検証記録内の当repoの`artifacts/`は`.artifacts/`へ読み替えてください。保存済みログ/JSONの内部パスは実行当時の値として保持しています。作業完了時の整理は[AppDockの共通手順](../AppDock.at365/DEVELOPMENT.md#作業完了時のテストフォルダー整理)に従い、実行中・状態不明・未解決の失敗記録・再利用する資料を保持します。
+dynamic-commands capabilityは固定79件のReplaceAsyncに使用します。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
 
 ## 公開設定
 
@@ -108,3 +88,7 @@ GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みま�
 ## 設定画面の構成
 
 `extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.62.3です。
+
+## 共通の運用
+
+文書構成・生成物・版更新・配布は[共通手順](../AppDock.at365/docs/development-workflow.md)、[文書方針](../AppDock.at365/docs/documentation.md)、[発行と配置](../AppDock.at365/docs/publishing.md)、[更新パッケージ](../AppDock.at365/docs/updates.md)、[生成物の整理](../AppDock.at365/DEVELOPMENT.md#作業完了時のテストフォルダー整理)を参照する。Applet固有の実行条件と結果は[検証記録](VERIFICATION.md)へ記載する。
