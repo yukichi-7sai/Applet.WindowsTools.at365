@@ -33,6 +33,9 @@ foreach ($taskProcess in $taskProcesses) {
         description = $taskProcess.description
     }
 }
+foreach ($taskCommand in $taskCommands) {
+    $taskCommand | Add-Member -NotePropertyName automation -NotePropertyValue $true -Force
+}
 if (@($taskCommands | Where-Object { [string]::IsNullOrWhiteSpace($_.description) }).Count -ne 0) {
     throw 'Every fixed command must have a description.'
 }
@@ -41,6 +44,8 @@ $taskDocLines = @(
     '# Windows標準コマンド一覧', '',
     ('WindowsToolsには、Windows標準のキー操作' + $taskCatalog.Count + '件と「Windowsをロックする」、ターミナル・電源関連の' + $taskProcesses.Count + '件が組み込まれています。既存のウィンドウ操作などと合わせて固定' + $taskCommands.Count + '件です。'), '',
     'AppDockのコマンドパレットやショートカット・ジェスチャー・トレイの割り当てから選べます。送信先は実行時の最前面です。別のアプリを操作するときはグローバルショートカットなどから実行してください。', '',
+    '固定コマンドは全件を共通操作API（MCPを含む）へ公開しています。ID・タイトル・説明を取得し、ショートカット等へ割り当てるほか、コマンドを直接実行できます。実行には呼び出し元のコマンド実行許可が必要です。キー送信・プロセス起動には、MCPとAppletの該当する操作許可も必要です。', '',
+    'シャットダウン・再起動・サインアウト・ロック・消灯・ウィンドウの終了は作業や接続に影響します。撮影・録画・マイクのミュート切り替えは画面や音声の扱いに影響します。任意のコマンド文字列や送信キーを指定する機能は公開せず、各コマンドの固定操作だけを実行します。', '',
     'Windowsのバージョン、機器、インストール済みアプリ、設定によって利用できる操作が異なります。コマンドを用意するだけで、必要な機能の導入や設定の変更は行いません。キー送信の完了は、Windows側の動作を確認できたという意味ではありません。', '',
     '「Windowsをロックする」はキー送信を使わず、Windowsへロックを要求します。実行すると直ちにロックされ、解除にはWindowsへのサインインが必要です。無操作時の自動ロックとは独立しています。', '',
     'Windowsキーと仮想デスクトップの66件に、メディア・音量キー7件を加えています。[Microsoftの一覧](https://support.microsoft.com/ja-jp/accessibility/windows/keyboard-shortcuts-in-windows)のWin+Ctrl+Shift+B、Win+L、Win+カンマは含めません。Win+Tabの重複と、Win+Cの条件別の説明はまとめています。', '',

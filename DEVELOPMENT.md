@@ -71,7 +71,7 @@ NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホス�
 
 ## 実装上の補足
 
-WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も91件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。外部実行の公開は追加していません。
+WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も91件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。全91件をmanifestのcommands[].automation=trueで共通操作API（MCPを含む）へ公開します。公開権限はmanifestを正本とし、runtime登録から権限を追加しません。
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。ウィンドウ操作の共通API契約は維持します。メディア・音量コマンドでは、本体とSDKの送信キー文法へ7キーを追加しています。
 
@@ -81,9 +81,13 @@ dynamic-commands capabilityは固定91件のReplaceAsyncに使用します。無
 
 ## 公開設定
 
+固定コマンドのID・タイトル・説明はcommands.list/applets.getで取得でき、引数なしコマンドとしてショートカット等の割り当て候補になります。MCPからの直接実行も可能で、呼び出し元のコマンド実行許可、キー送信・プロセス起動ではMCPとApplet双方の該当許可を維持します。ID・実行処理・既定割り当て・設定の公開範囲は変更しません。公開宣言を変更したAppletの配置後はAppDockを再起動してください。基盤の公開/実行の分離やApplet単位の公開設定は今回追加していません。
+
 外部公開項目はextension.jsonのsettings[].automationで宣言します。取得とrevision付き更新は[共通操作API](../AppDock.at365/docs/automation.md)を使い、Applet固有のAPIや本体側の許可一覧は追加しません。booleanのON/OFF/toggleはgenerateCommandsで明示生成します。設定反映は既存Settings.OnChangedを共用します。
 
 GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みます。公開schema・読取り・更新、非公開項目/不正値の拒否、書込許可、dryRun、古いrevisionの拒否と、各Applet実プロセスへの反映を確認します。実利用Codex設定やモデルは使用しません。
+
+scripts/commands-mcp-check.cjsで全91件の公開・説明・割当候補を確認し、無効な試験用割当のdryRun/保存/取得/削除、既存割当保持と安全な消灯予約取消のMCP実行・実行許可の拒否を確認します。シャットダウン・再起動・サインアウト・ロックや撮影・録画等はこの試験で実行しません。
 
 ## 設定画面の構成
 

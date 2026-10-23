@@ -1,6 +1,17 @@
 # 検証記録
 
-対象の現行版は`0.2.4`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
+対象の現行版は`0.2.5`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
+
+## 2026-10-23: 固定91コマンドのMCP公開（0.2.5）
+
+- main／clean／origin/main追跡を確認し、pull --ff-only成功（ff2adb4から更新なし）。全固定コマンドへmanifestのautomation=trueを追加し、再生成でも保持する。意味的差分は版と91件の公開フラグだけで、ID・タイトル・説明・設定の公開範囲・既定割当は不変。公開権限は既存manifestで管理し、MCP基盤・操作許可・実行処理は変更していない。
+- 全件の内容を発行前レビュー。任意のコマンド文字列・任意キー・実行引数を受け取る機能はない。終了/ロック/消灯、前面対象の終了・移動、撮影/録画/マイク切替等の影響を確認し、要望どおり除外なし。古い非公開記述と設定revisionをまたぐ試験順序を修正し、阻害指摘なし。設定・保存ファイルの追加削除や破壊的変更がないため0.2.4→0.2.5へパッチ更新し、標準publish.batで発行した。
+- .NET回帰 **42/42**、Windows PowerShell 5.1の生成チェック、manifestの意味的差分・BOM/CRLF検査、発行DLLの実ExtensionHost/模擬API試験が成功。73入力/5プロセスの固定要求と取消・停止・再起動を模擬検証。実シャットダウン・再起動・サインアウト・ロック、全キー操作の実効果は試していない。
+- 同じ固定AppDock 0.85.9 EXEと最終Appletの隔離GUI **8群** が成功。全91件の公開と説明が設定変更・再起動・停止後も維持され、停止時は実行不可。MCPのcommands.list/applets.getで全件の説明、shortcuts.getで全件の割当候補を確認。全91件の無効な試験用割当についてdryRun・保存・取得・削除と既存割当の完全保持を確認した。直接実行は安全なcancel-display-offだけで成功/実行許可OFF時の拒否を検証し、未知の旧コマンドも拒否した。
+- GUIの既存確認も成功。実Terminal起動後に新規ウィンドウだけを閉じ、Windowsの終了選択画面は表示後に取消。旧設定・割当保持、MCPの設定更新/入力拒否/書込許可/dryRun/競合、消灯予約取消と正常終了0を確認。証跡: `.artifacts/host-1792763179192/`（result.json、commands-mcp.json、terminal-window.json、shutdown-dialog.json等）。実利用設定やCodex登録は変更していない。
+- 配布ZIPは **31,733 bytes**／SHA256 `ebf807edc3fc6e120f99fe7d69f7a8a145d1ef1168341c9eb6f7183d10744a8f`、DLL SHA256 `f75ad620ab37941b647e48e0bf8b16f9e9a1a6ceaec249ba43a5939471fac8c9`。source/配布/ZIPのmanifest、DLL/deps、feedの版・最低本体0.85.9・size/hashが一致。DLL版0.2.5.0。本体EXEのhashは前版検証時と同じ`39297303f8e28aa28bb7bb2899a0eb96934c224b76118f39d654ef0c1f9c0514`で再発行なし。
+- 証跡: `.artifacts/mcp-publication-20261023/` のreview.json、各試験の完全ログ/終了コード、inputs-before/after.json、published.json、validation.json。入力hashは前後一致。制限内.NET/EXE起動失敗は保存し同一コマンドを通常ユーザーで再実行して成功。AQUA先端も通常ユーザーで読取り確認。必要回帰は今回実行済みで、未変更の本体/SDK全回帰や兄弟Applet試験は追加していない。作業中に本体repoへ現れたpackage.json/pnpm-lock.yamlの別変更は触らず、対象へ含めない。
+- テスト専用フォルダーを確認し、直近成功3件・既存の検証/再利用資料・失敗/状態不明を保持して削除0件。コミット/プッシュの先端とstage/commit treeは同証跡に記録する。GitHub Releases公開・実利用先deployは行わない。利用先へ更新を配置した後、公開宣言の反映にAppDockの再起動が必要。
 
 ## 2026-10-23: 説明の全件追加・ターミナル実行エイリアス修正とコミット前照合（0.2.4）
 

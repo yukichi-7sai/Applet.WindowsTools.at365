@@ -13,6 +13,7 @@ module.exports = async function checkSettings({
   invalid,
   hidden,
   switches = [],
+  fixedCommands = [],
 }) {
   const hostRequire = createRequire(path.join(host, "package.json"));
   const file = path.join(profile, "codex", "config.toml");
@@ -160,6 +161,9 @@ module.exports = async function checkSettings({
         (l) => l.source === "automation" && l.message.includes(update.id),
       ),
     );
+    if (fixedCommands.length) {
+      await require('./commands-mcp-check.cjs')({ call, client, page, id, catalog, fixedCommands, profile });
+    }
     return await get();
   } finally {
     await client.close();

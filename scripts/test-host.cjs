@@ -147,20 +147,21 @@ async function state(page) {
         const command = current.commands.find(c => c.id === entry.id);
         assert.ok(entry.description?.trim(), entry.id);
         assert.equal(command?.description, entry.description, entry.id);
+        assert.equal(command.automation, true, entry.id);
       }
       for (const entry of catalog) {
         const id = 'at365.windows-tools.windows.' + entry.id;
         const command = current.commands.find(c => c.id === id);
         assert.equal(command?.title, entry.title, id);
         assert.equal(command.description, `送信キー: ${entry.keys}。${entry.description}`, id);
-        assert.notEqual(command.automation, true);
+        assert.equal(command.automation, true);
       }
       assert.ok(current.commands.some(c => c.id === 'at365.windows-tools.lock-windows'));
       for (const entry of processCatalog) {
         const command = current.commands.find(c => c.id === 'at365.windows-tools.' + entry.id);
         assert.equal(command?.title, entry.title);
         assert.equal(command.description, entry.description);
-        assert.notEqual(command.automation, true);
+        assert.equal(command.automation, true);
       }
     };
     await checkStatic();
@@ -286,6 +287,7 @@ async function state(page) {
         { shortcuts: [] },
       ],
       hidden: ["autoLockEnabled", "autoLockMinutes", "shortcuts"],
+      fixedCommands: manifestCommands,
     });
     await until(
       async () => (await state(page)).panel.facts[0].value.includes("1800秒"),
@@ -341,6 +343,7 @@ async function state(page) {
       stopped.commands.every((command) => command.available === false),
       "Stopped commands unavailable",
     );
+    assert.ok(stopped.commands.every((command) => command.automation === true));
     const errors = (await snapshot(page)).logs.filter(
       (entry) => entry.level === "error",
     );
@@ -399,11 +402,12 @@ async function state(page) {
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
             "91 fixed commands with static descriptions and panel actions",
-            "five terminal/power commands retain their descriptions and remain private to local execution",
+            "all 91 fixed commands remain public after dynamic replacement, restart and stop",
             "native Windows shutdown dialog has a choice, OK and Cancel and closes by cancellation without shutdown",
             "Windows Terminal opens through the exact launch command; only the new terminal window is closed",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
+            "MCP command descriptions / all 91 shortcut assignments dryRun and persistence / safe execution and execution denial",
             "countdown cancel / restart / stop",
           ],
         },
