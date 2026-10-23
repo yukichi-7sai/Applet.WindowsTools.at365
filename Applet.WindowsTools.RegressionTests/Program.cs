@@ -5,7 +5,7 @@ using Applets.WindowsTools;
 
 internal static class Program
 {
-    private static int FixedCount => 13 + WindowsShortcuts.All.Count;
+    private static int FixedCount => 13 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count;
     [STAThread]
     private static int Main(string[] args)
     {
@@ -30,6 +30,14 @@ internal static class Program
             foreach (var keys in new[] { "", "Ctrl+", "Ctrl+Ctrl+A", "Ctrl+Control+A", "F25", "%{F4}", "Ctrl+A+B", "Text: hello" })
                 Throws(() => KeyChord.Parse(keys));
         });
+        Test("media and volume keys round trip with Windows virtual keys", () => {
+            var keys = new[] { "VolumeMute", "VolumeDown", "VolumeUp", "MediaNextTrack", "MediaPrevTrack", "MediaStop", "MediaPlayPause" };
+            for (var i = 0; i < keys.Length; i++) {
+                var chord = KeyChord.Parse(keys[i].ToLowerInvariant());
+                Check(chord.Key == 0xAD + i && chord.Extended && chord.Modifiers.Length == 0);
+                Check(chord.ToShortcut() == keys[i]);
+            }
+        });
         Test("system keys and symbolic keys round trip without binding to a keyboard layout", () => {
             foreach (var keys in new[] { "Win", "Win+Pause", "Win+PrintScreen", "Win+Period", "Win+Semicolon", "Win+Slash", "Win+Plus", "Win+Minus" })
                 Check(KeyChord.Parse(keys).ToShortcut() == keys);
@@ -47,7 +55,11 @@ internal static class Program
         tests.Add(("static catalog covers both source sections, preserves descriptions and ignores removed custom settings", async () => {
             var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
             await applet.ActivateAsync(context, default);
+            Check(context.Descriptions.Count == FixedCount && context.Descriptions.Values.All(value => !string.IsNullOrWhiteSpace(value)));
+            foreach (var description in CommandDescriptions.All)
+                Check(context.Descriptions[context.ExtensionId + "." + description.Key] == description.Value);
             var expected = "Win Win+A Win+Shift+A Win+Alt+B Win+C Win+Alt+D Win+Alt+Down Win+Alt+H Win+Alt+K Win+Alt+Up Win+Ctrl+C Win+Ctrl+Enter Win+Ctrl+F Win+Ctrl+Q Win+Ctrl+Space Win+Ctrl+V Win+D Win+Down Win+E Win+Escape Win+F Win+Slash Win+G Win+H Win+Home Win+I Win+J Win+K Win+Left Win+M Win+Minus Win+N Win+O Win+P Win+Pause Win+Period Win+Semicolon Win+Plus Win+PrintScreen Win+Q Win+R Win+Right Win+S Win+Shift+Down Win+Shift+Enter Win+Shift+Left Win+Shift+M Win+Shift+R Win+Shift+Right Win+Shift+S Win+Shift+Space Win+Shift+Up Win+Shift+V Win+Space Win+Tab Win+U Win+Up Win+V Win+W Win+X Win+Y Win+Z Win+Ctrl+D Win+Ctrl+Right Win+Ctrl+Left Win+Ctrl+F4".Split(' ');
+            expected = expected.Concat(new[] { "MediaPlayPause", "MediaStop", "MediaNextTrack", "MediaPrevTrack", "VolumeMute", "VolumeUp", "VolumeDown" }).ToArray();
             Check(WindowsShortcuts.All.Select(s => s.Keys).Order().SequenceEqual(expected.Order()));
             Check(WindowsShortcuts.All.Select(s => s.Id).Distinct().Count() == expected.Length);
             foreach (var shortcut in WindowsShortcuts.All) {
@@ -65,6 +77,46 @@ internal static class Program
             await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".windows.explorer"](cancellation.Token));
             await applet.DeactivateAsync(default); await queued(default);
             Check(context.SentKeys.Count == expected.Length);
+        }));
+        tests.Add(("terminal and power commands delegate fixed requests, preserve settings and obey cancellation", async () => {
+            var context = new FakeContext(); var applet = new WindowsToolsApplet(new FakePlatform());
+            await applet.ActivateAsync(context, default);
+            var arguments = new Dictionary<string, string[]> {
+                ["shutdown-windows"] = ["/s", "/t", "0"],
+                ["restart-windows"] = ["/r", "/t", "0"], ["sign-out-windows"] = ["/l"]
+            };
+            foreach (var entry in arguments) {
+                await context.Execute(entry.Key);
+                var request = context.ProcessRequests[^1];
+                Check(request.GetProperty("mode").GetString() == "executable");
+                Check(request.GetProperty("arguments").EnumerateArray().Select(a => a.GetString()).SequenceEqual(entry.Value));
+                Check(request.GetProperty("executable").GetString() == Path.Combine(Environment.SystemDirectory, "shutdown.exe"));
+                Check(!request.GetProperty("showConsole").GetBoolean());
+            }
+            await context.Execute("launch-terminal");
+            var terminal = context.ProcessRequests[^1];
+            Check(terminal.GetProperty("mode").GetString() == "powershell");
+            Check(terminal.GetProperty("script").GetString() == "Start-Process -FilePath 'wt.exe' -ErrorAction Stop");
+            Check(!terminal.GetProperty("showConsole").GetBoolean());
+            await context.Execute("show-shutdown-dialog");
+            var dialog = context.ProcessRequests[^1];
+            Check(dialog.GetProperty("mode").GetString() == "powershell");
+            Check(dialog.GetProperty("script").GetString() == "(New-Object -ComObject Shell.Application).ShutdownWindows()");
+            Check(!dialog.GetProperty("showConsole").GetBoolean());
+            await context.Change("displayOffSeconds", 15);
+            Check(context.Handlers.Count == 91 && context.Values.Count == 1 && context.SentKeys.Count == 0);
+            context.ApiFailure = true;
+            await ThrowsAsync(() => context.Execute("shutdown-windows"));
+            Check(context.ProcessRequests.Count == 5);
+            context.ApiFailure = false;
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            foreach (var command in WindowsProcessCommands.All) {
+                var queued = context.Handlers[context.ExtensionId + "." + command.Id];
+                await ThrowsAsync(() => queued(cancellation.Token));
+            }
+            var stopped = context.Handlers[context.ExtensionId + ".shutdown-windows"];
+            await applet.DeactivateAsync(default); await stopped(default);
+            Check(context.ProcessRequests.Count == 5);
         }));
         tests.Add(("dedicated lock requests one lock without changing automatic lock settings", async () => {
             var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
@@ -185,12 +237,16 @@ internal static class Program
         public Dictionary<string, object> Values = [];
         public Dictionary<string, string?> Descriptions = [];
         public List<string> SentKeys = [];
+        public List<JsonElement> ProcessRequests = [];
+        public bool ApiFailure;
         public IAppDockService AppDock => this;
         public Task<JsonElement> CallAsync(string method, object? parameters = null, CancellationToken cancellationToken = default) {
             cancellationToken.ThrowIfCancellationRequested();
-            Check(method == "input.sendKeys");
-            SentKeys.Add(JsonSerializer.SerializeToElement(parameters).GetProperty("keys").GetString()!);
-            return Task.FromResult(JsonSerializer.SerializeToElement(new { completion = "inputSubmitted", effectVerified = false }));
+            if (ApiFailure) throw new InvalidOperationException("API permission denied");
+            var request = JsonSerializer.SerializeToElement(parameters);
+            if (method == "input.sendKeys") SentKeys.Add(request.GetProperty("keys").GetString()!);
+            else { Check(method == "processes.start"); ProcessRequests.Add(request); }
+            return Task.FromResult(JsonSerializer.SerializeToElement(new { completion = method == "input.sendKeys" ? "inputSubmitted" : "processStarted", effectVerified = false }));
         }
         public Func<CancellationToken, Task>? Changed, Timer;
         public AppDock.SDK.Panel? LastPanel;

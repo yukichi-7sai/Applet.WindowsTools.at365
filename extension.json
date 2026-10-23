@@ -3,8 +3,8 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.2.2",
-  "minimumHostVersion": "0.62.3",
+  "version": "0.2.4",
+  "minimumHostVersion": "0.85.9",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
@@ -68,51 +68,63 @@
   "commands": [
     {
       "id": "at365.windows-tools.open-folder",
-      "title": "最前面アプリの実行ファイルのフォルダーを開く"
+      "title": "最前面アプリの実行ファイルのフォルダーを開く",
+      "description": "最前面アプリの実行ファイルがあるフォルダーをエクスプローラーで開きます。アプリで閲覧中のフォルダーや編集中の文書の保存先ではありません。"
     },
     {
       "id": "at365.windows-tools.display-off",
-      "title": "ディスプレイの消灯を予約"
+      "title": "ディスプレイの消灯を予約",
+      "description": "設定した秒数後にディスプレイを消灯するよう予約します。再実行すると予約し直します。消灯予約の取り消しコマンドで中止できます。Windowsのロックやスリープは行いません。"
     },
     {
       "id": "at365.windows-tools.cancel-display-off",
-      "title": "ディスプレイの消灯予約を取り消す"
+      "title": "ディスプレイの消灯予約を取り消す",
+      "description": "このAppletで予約したディスプレイの消灯を取り消します。予約がなければ何も変更しません。すでに消灯したディスプレイを点灯する操作ではありません。"
     },
     {
       "id": "at365.windows-tools.toggle-auto-lock",
-      "title": "無操作時の自動ロックを切り替える"
+      "title": "無操作時の自動ロックを切り替える",
+      "description": "マウスとキーボードが無操作のときにWindowsをロックする機能の有効／無効を切り替えて保存します。有効にした時点から設定した無操作時間を数え直します。"
     },
     {
       "id": "at365.windows-tools.left",
-      "title": "ウィンドウを左へ移動"
+      "title": "ウィンドウを左へ移動",
+      "description": "対象ウィンドウを中央、左端、左隣のモニターの右端の順に移動します。開始位置により途中から移動し、隣のモニターがなければ折り返しません。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.right",
-      "title": "ウィンドウを右へ移動"
+      "title": "ウィンドウを右へ移動",
+      "description": "対象ウィンドウを中央、右端、右隣のモニターの左端の順に移動します。開始位置により途中から移動し、隣のモニターがなければ折り返しません。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.full-height",
-      "title": "ウィンドウを上下いっぱいに広げる"
+      "title": "ウィンドウを上下いっぱいに広げる",
+      "description": "対象ウィンドウの横位置と幅を基本的に保ち、タスクバーを除く作業領域の上下いっぱいに高さを広げます。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.center",
-      "title": "ウィンドウを画面中央へ移動"
+      "title": "ウィンドウを画面中央へ移動",
+      "description": "対象ウィンドウを、サイズを保ったまま現在のモニターの作業領域の中央へ移動します。最大化中は移動しません。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.minimize",
-      "title": "ウィンドウを最小化"
+      "title": "ウィンドウを最小化",
+      "description": "対象ウィンドウへ通常の最小化要求を送ります。ジェスチャーでは開始時のウィンドウ、それ以外では実行時の最前面ウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.maximize",
-      "title": "ウィンドウを最大化"
+      "title": "ウィンドウを最大化",
+      "description": "対象ウィンドウへ通常の最大化要求を送ります。対応しないウィンドウでは適用されない場合があります。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.restore",
-      "title": "ウィンドウを元のサイズに戻す"
+      "title": "ウィンドウを元のサイズに戻す",
+      "description": "対象ウィンドウへ通常のサイズに戻す要求を送ります。移動や高さ調整の取り消し、最小化した別のアプリの呼び戻しではありません。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.close",
-      "title": "ウィンドウを閉じる"
+      "title": "ウィンドウを閉じる",
+      "description": "対象ウィンドウへ通常の終了要求を送ります。保存確認や終了のキャンセルは対象アプリが処理し、強制終了は行いません。ジェスチャーでは開始時のウィンドウが対象です。"
     },
     {
       "id": "at365.windows-tools.lock-windows",
@@ -448,6 +460,66 @@
       "id": "at365.windows-tools.windows.desktop-close",
       "title": "現在の仮想デスクトップを閉じる",
       "description": "送信キー: Win+Ctrl+F4。現在の仮想デスクトップを閉じます。開いているアプリは終了せず、別の仮想デスクトップへ移ります。"
+    },
+    {
+      "id": "at365.windows-tools.windows.media-play-pause",
+      "title": "メディアの再生／一時停止",
+      "description": "送信キー: MediaPlayPause。メディアキーに対応するアプリへ再生／一時停止を送ります。操作対象はWindowsと各アプリの処理に従い、特定のアプリは選択しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.media-stop",
+      "title": "メディアの停止",
+      "description": "送信キー: MediaStop。メディアキーに対応するアプリへ停止を送ります。停止に対応しないアプリでは動作しません。特定のアプリは選択しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.media-next-track",
+      "title": "メディアの次のトラック",
+      "description": "送信キー: MediaNextTrack。メディアキーに対応するアプリへ次のトラックへの移動を送ります。特定のアプリは選択しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.media-prev-track",
+      "title": "メディアの前のトラック",
+      "description": "送信キー: MediaPrevTrack。メディアキーに対応するアプリへ前のトラックへの移動を送ります。曲の先頭へ戻るか前の曲へ移るかは対象アプリに従います。"
+    },
+    {
+      "id": "at365.windows-tools.windows.volume-mute",
+      "title": "音量のミュート／解除を切り替える",
+      "description": "送信キー: VolumeMute。Windowsの音声出力のミュート状態を切り替えます。マイクのミュートやAppDockだけの音声設定は変更しません。"
+    },
+    {
+      "id": "at365.windows-tools.windows.volume-up",
+      "title": "音量を上げる",
+      "description": "送信キー: VolumeUp。Windowsの音声出力の音量を1回分上げます。変更幅やミュート中の動作はWindowsの処理に従います。"
+    },
+    {
+      "id": "at365.windows-tools.windows.volume-down",
+      "title": "音量を下げる",
+      "description": "送信キー: VolumeDown。Windowsの音声出力の音量を1回分下げます。変更幅やミュート中の動作はWindowsの処理に従います。"
+    },
+    {
+      "id": "at365.windows-tools.launch-terminal",
+      "title": "Windowsターミナルを起動する",
+      "description": "Windowsターミナルを起動します。Windowsターミナルのインストールとwt.exeのアプリ実行エイリアスが必要です。ウィンドウやタブの開き方はターミナルの設定に従います。"
+    },
+    {
+      "id": "at365.windows-tools.shutdown-windows",
+      "title": "Windowsをシャットダウンする",
+      "description": "確認ダイアログや待ち時間を設けずにWindowsのシャットダウンを要求します。強制終了の/fは指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。"
+    },
+    {
+      "id": "at365.windows-tools.restart-windows",
+      "title": "Windowsを再起動する",
+      "description": "確認ダイアログや待ち時間を設けずにWindowsの再起動を要求します。強制終了の/fは指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。"
+    },
+    {
+      "id": "at365.windows-tools.sign-out-windows",
+      "title": "Windowsからサインアウトする",
+      "description": "確認ダイアログや待ち時間を設けずに現在のユーザーのサインアウトを要求します。強制終了は指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。"
+    },
+    {
+      "id": "at365.windows-tools.show-shutdown-dialog",
+      "title": "Windowsのシャットダウン画面を開く",
+      "description": "Windows標準の「Windowsのシャットダウン」ダイアログを開きます。画面で操作を選んでOKを押すまで終了操作は行わず、キャンセルできます。Alt+F4のキー送信は使いません。"
     }
   ]
 }

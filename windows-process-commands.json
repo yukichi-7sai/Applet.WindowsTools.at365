@@ -1,0 +1,7 @@
+[
+  { "id": "launch-terminal", "title": "Windowsターミナルを起動する", "script": "Start-Process -FilePath 'wt.exe' -ErrorAction Stop", "description": "Windowsターミナルを起動します。Windowsターミナルのインストールとwt.exeのアプリ実行エイリアスが必要です。ウィンドウやタブの開き方はターミナルの設定に従います。" },
+  { "id": "shutdown-windows", "title": "Windowsをシャットダウンする", "executable": "shutdown.exe", "arguments": ["/s", "/t", "0"], "description": "確認ダイアログや待ち時間を設けずにWindowsのシャットダウンを要求します。強制終了の/fは指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。" },
+  { "id": "restart-windows", "title": "Windowsを再起動する", "executable": "shutdown.exe", "arguments": ["/r", "/t", "0"], "description": "確認ダイアログや待ち時間を設けずにWindowsの再起動を要求します。強制終了の/fは指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。" },
+  { "id": "sign-out-windows", "title": "Windowsからサインアウトする", "executable": "shutdown.exe", "arguments": ["/l"], "description": "確認ダイアログや待ち時間を設けずに現在のユーザーのサインアウトを要求します。強制終了は指定しません。未保存の作業がある場合の確認や中止はWindowsと対象アプリに従います。" },
+  { "id": "show-shutdown-dialog", "title": "Windowsのシャットダウン画面を開く", "script": "(New-Object -ComObject Shell.Application).ShutdownWindows()", "description": "Windows標準の「Windowsのシャットダウン」ダイアログを開きます。画面で操作を選んでOKを押すまで終了操作は行わず、キャンセルできます。Alt+F4のキー送信は使いません。" }
+]

@@ -15,9 +15,9 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 静的な定義の正本は`windows-shortcuts.json`。ID・表示名・キー・説明を持ち、DLLへ埋め込んで読み込む。実行時に外部の定義ファイルや設定へ依存しない。`scripts/update-shortcut-manifest.ps1`で同じ定義をmanifestへ反映し、`-Check`で一致を検証する。
 
-コマンドIDは`at365.windows-tools.windows.<固定ID>`、専用ロックは`at365.windows-tools.lock-windows`。固定コマンドは合計79件となる。静的コマンドも従来のReplaceAsyncへ毎回含め、設定変更後も残す。manifestにも宣言し、停止中の割り当て候補と説明を保持する。初期キー割り当てと外部実行の公開は追加しない。
+コマンドIDは`at365.windows-tools.windows.<固定ID>`、専用ロックは`at365.windows-tools.lock-windows`。固定コマンドは合計91件となる。静的コマンドも従来のReplaceAsyncへ毎回含め、設定変更後も残す。manifestにも宣言し、停止中の割り当て候補と説明を保持する。初期キー割り当てと外部実行の公開は追加しない。
 
-本体の宣言・開始・動的置換と.NET Runtimeの共通上限は256件で、登録79件はその範囲に収まる。名前空間・重複・タイトル・説明の検証と、拒否時の元の登録への復元は維持する。
+本体の宣言・開始・動的置換と.NET Runtimeの共通上限は256件で、登録91件はその範囲に収まる。名前空間・重複・タイトル・説明の検証と、拒否時の元の登録への復元は維持する。
 
 ## 表示と説明
 
@@ -31,7 +31,7 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 共通の送信文法へWin単独、Pause、PrintScreen、Period、Semicolon、Slash、Plus、Minusを追加する。記号はSDKでは意味を保持し、入力workerで送信対象のスレッドのGetKeyboardLayoutとVkKeyScanExWにより仮想キーと必要な修飾キーへ解決する。配列を変更・キャッシュしない。未対応の記号変換は失敗として返す。日本語／英語配列のセミコロン・プラスの違いを固定のOEMキーで代用しない。1回の送信で必ずキーを解放し、押しっぱなしは作らない。
 
-本体0.62.3、WindowsTools0.2.1を対象とし、Appletの最低本体版を0.62.3へ更新する。設定・保存ファイル・既存の呼び出し契約の増減や破壊的変更がないため、WindowsToolsはパッチ更新。本体0.62.3の実装・発行物は維持する。
+本体0.85.9、WindowsTools0.2.4を対象とし、Appletの最低本体版は0.85.9。設定・保存ファイル・既存の呼び出し契約の増減や破壊的変更がないため、両方をパッチ更新する。
 
 ## 検証方針
 
@@ -40,3 +40,13 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 - 実ロック、HDR変更、録画・撮影、入力方式変更、仮想デスクトップの作成・終了などを全件自動実行しない。模擬送信と実Windowsで確認した効果をVERIFICATIONで区別する。
 
 ローカル発行までを対象とし、commit・push・GitHub Release・実利用先へのdeployは別工程とする。
+
+## ターミナル・電源・メディア・音量の追加
+
+メディア・音量7件はwindows-shortcuts.jsonに加え、本体0.85.9のinput.sendKeysへ委譲する。キー送信文法だけを拡張し、受信フック・割り当て・記録は変更しない。全キー送信は73件。
+
+windows-process-commands.jsonを正本にターミナル・シャットダウン・再起動・サインアウト・終了選択画面の5件を定義し、DLLへ埋め込む。実行は本体のprocesses.startへ委譲し、既存の利用許可・取消・寿命を使う。終了選択画面は固定PowerShellスクリプトでShell.Application.ShutdownWindowsを呼び、Alt+F4は使わない。即時電源操作はshutdown.exeをシステムディレクトリから起動し、/fや待ち時間を加えない。ターミナルは固定PowerShellスクリプトのStart-Processでwt.exeを起動し、実行エイリアスを通常のEXEとして事前検査しない。
+
+固定コマンドは91件。既定の割り当てと外部公開は追加せず、設定・保存ファイル・既存IDは維持する。WindowsTools0.2.4、本体0.85.9へパッチ更新し、最低本体版を0.85.9へ揃える。電源操作は模擬APIで引数を検証し、実シャットダウン・再起動・サインアウトは自動実行しない。
+
+既存12件の説明はcommand-descriptions.jsonを正本にし、DLLへ埋め込んでCommandDescriptionsから実行時登録へ渡す。manifest生成も同じ定義を使い、91件すべてのdescriptionの存在と実行時/宣言の一致を検証する。

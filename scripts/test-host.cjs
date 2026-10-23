@@ -38,7 +38,9 @@ for (const name of [
   );
 const id = "at365.windows-tools";
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-shortcuts.json'), 'utf8'));
-const fixedCount = 13 + catalog.length;
+const processCatalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-process-commands.json'), 'utf8'));
+const manifestCommands = JSON.parse(fs.readFileSync(path.join(root, 'extension.json'), 'utf8')).commands;
+const fixedCount = 13 + catalog.length + processCatalog.length;
 const { overlayPage, closingAction } = require(path.join(host, 'scripts/shell-overlay-helper.cjs'));
 const dynamicId = id + ".send.shortcut-1";
 const windowIds = [
@@ -141,6 +143,11 @@ async function state(page) {
     assert.equal((await state(page)).state, "running");
     const checkStatic = async () => {
       const current = await state(page);
+      for (const entry of manifestCommands) {
+        const command = current.commands.find(c => c.id === entry.id);
+        assert.ok(entry.description?.trim(), entry.id);
+        assert.equal(command?.description, entry.description, entry.id);
+      }
       for (const entry of catalog) {
         const id = 'at365.windows-tools.windows.' + entry.id;
         const command = current.commands.find(c => c.id === id);
@@ -149,11 +156,41 @@ async function state(page) {
         assert.notEqual(command.automation, true);
       }
       assert.ok(current.commands.some(c => c.id === 'at365.windows-tools.lock-windows'));
+      for (const entry of processCatalog) {
+        const command = current.commands.find(c => c.id === 'at365.windows-tools.' + entry.id);
+        assert.equal(command?.title, entry.title);
+        assert.equal(command.description, entry.description);
+        assert.notEqual(command.automation, true);
+      }
     };
     await checkStatic();
-    await page.evaluate(() => window.dock.navigate('extensions'));
-    await page.getByRole('complementary', { name: 'Applet一覧' }).getByRole('button', { name: /^WindowsTools/ }).click();
-    await page.getByRole('tab', { name: 'ショートカット', exact: true }).click();
+    await page.evaluate(() => window.dock.setAppletApiPermissions({}));
+    await page.evaluate(() => window.dock.setAppletApiPermissions({ read: true, execute: true, runProcesses: true }));
+    const terminalProbe = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts/check-shutdown-dialog.ps1'), '-OutputDirectory', profile, '-Kind', 'terminal'], { windowsHide: true, stdio: 'pipe' });
+    let terminalOutput = '';
+    terminalProbe.stdout.on('data', data => { terminalOutput += data; });
+    terminalProbe.stderr.on('data', data => { terminalOutput += data; });
+    await until(() => fs.existsSync(path.join(profile, 'terminal-probe.ready')), 'Terminal probe ready');
+    await page.evaluate(() => window.dock.executeCommand('at365.windows-tools.launch-terminal'));
+    await until(() => terminalProbe.exitCode !== null, 'Terminal probe completed');
+    assert.equal(terminalProbe.exitCode, 0, terminalOutput);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(profile, 'terminal-window.json'), 'utf8').replace(/^\uFEFF/, '')).cancelled, true);
+    const probe = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts/check-shutdown-dialog.ps1'), '-OutputDirectory', profile], { windowsHide: true, stdio: 'pipe' });
+    let probeOutput = '';
+    probe.stdout.on('data', data => { probeOutput += data; });
+    probe.stderr.on('data', data => { probeOutput += data; });
+    await until(() => fs.existsSync(path.join(profile, 'dialog-probe.ready')), 'Shutdown dialog probe ready');
+    await page.evaluate(() => window.dock.executeCommand('at365.windows-tools.show-shutdown-dialog'));
+    await until(() => probe.exitCode !== null, 'Shutdown dialog probe completed');
+    assert.equal(probe.exitCode, 0, probeOutput);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(profile, 'shutdown-dialog.json'), 'utf8').replace(/^\uFEFF/, '')).cancelled, true);
+    await page.evaluate(() => window.dock.setAppletApiPermissions({}));
+    await page.evaluate(() => window.dock.executeCommand('appdock.settings.open'));
+    await page.locator('.settings-categories').getByRole('button', { name: 'ショートカットキー', exact: true }).click();
+    const folderRow = page.locator('[data-shortcut-command="at365.windows-tools.open-folder"]');
+    await folderRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.open-folder').description, { exact: true }).waitFor();
+    await folderRow.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(profile, 'added-description.png') });
     const recallRow = page.locator('[data-shortcut-command="at365.windows-tools.windows.recall"]');
     await recallRow.getByText(/最小システム要件/).waitFor();
     await recallRow.scrollIntoViewIfNeeded();
@@ -256,7 +293,7 @@ async function state(page) {
     );
     assert.equal(
       (await snapshot(page)).settings.value.extensions[id].settings
-        .autoLockEnabled,
+        .autoLockEnabled ?? false,
       false,
     );
     assert.deepEqual(
@@ -330,7 +367,7 @@ async function state(page) {
     );
     success = true;
     console.log(
-      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 79 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
+      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 91 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
     );
     console.log(profile);
   } finally {
@@ -361,7 +398,10 @@ async function state(page) {
           hostHash: packaged ? hash(packaged) : null,
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
-            "79 fixed commands with static descriptions and panel actions",
+            "91 fixed commands with static descriptions and panel actions",
+            "five terminal/power commands retain their descriptions and remain private to local execution",
+            "native Windows shutdown dialog has a choice, OK and Cancel and closes by cancellation without shutdown",
+            "Windows Terminal opens through the exact launch command; only the new terminal window is closed",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
             "countdown cancel / restart / stop",

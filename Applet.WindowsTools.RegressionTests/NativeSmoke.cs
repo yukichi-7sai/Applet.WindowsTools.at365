@@ -8,10 +8,13 @@ internal static class NativeSmoke
 {
     private static readonly string[] Suffixes = new[] {"cancel-display-off", "center", "close", "display-off", "full-height", "left",
         "maximize", "minimize", "open-folder", "restore", "right", "toggle-auto-lock", "lock-windows" }
-        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Order().ToArray();
-    private static void CheckCommands(JsonElement contributions) => Require(
-        contributions.GetProperty("commands").EnumerateArray().Select(c => c.GetProperty("id").GetString()).Order()
-        .SequenceEqual(Suffixes.Select(s => "at365.windows-tools." + s)), "all fixed command registrations");
+        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Concat(WindowsProcessCommands.All.Select(c => c.Id)).Order().ToArray();
+    private static void CheckCommands(JsonElement contributions) {
+        var commands = contributions.GetProperty("commands").EnumerateArray().ToArray();
+        Require(commands.Select(c => c.GetProperty("id").GetString()).Order()
+            .SequenceEqual(Suffixes.Select(s => "at365.windows-tools." + s)), "all fixed command registrations");
+        Require(commands.All(c => c.TryGetProperty("description", out var description) && !string.IsNullOrWhiteSpace(description.GetString())), "all fixed command descriptions");
+    }
     public static int Protocol(string runner, string assembly)
     {
         try
@@ -28,6 +31,14 @@ internal static class NativeSmoke
                 Require(peer.SentKeys[^1] == shortcut.Keys, "static key delegation");
             }
             Require(peer.SentKeys.Count == WindowsShortcuts.All.Count, "one API call per static command");
+            foreach (var command in WindowsProcessCommands.All) {
+                var registration = contributions.GetProperty("commands").EnumerateArray()
+                    .Single(c => c.GetProperty("id").GetString() == "at365.windows-tools." + command.Id);
+                Require(registration.GetProperty("description").GetString() == command.Description, "process command description");
+                peer.Request("command.execute", new { id = "at365.windows-tools." + command.Id });
+                Require(peer.ProcessRequests[^1].ToString() == JsonSerializer.SerializeToElement(command.CreateRequest()).ToString(), "fixed process delegation without executing it");
+            }
+            Require(peer.ProcessRequests.Count == 5, "five simulated process launches");
             peer.Request("settings.changed", new { shortcuts = new[] { new { id = "test", title = "Test", keys = "Ctrl+A" } } });
             Require(peer.RegisteredIds.Length == Suffixes.Length && !peer.RegisteredIds.Any(id => id.Contains(".send.")), "obsolete key setting never creates commands");
             peer.Request("settings.changed", new { displayOffSeconds = 20 });
@@ -37,7 +48,7 @@ internal static class NativeSmoke
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 79 commands and descriptions, 66 input delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine("PASS published DLL: activation, 91 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -194,6 +205,7 @@ internal static class NativeSmoke
         public bool PanelSeen { get; private set; }
         public string[] RegisteredIds { get; private set; } = [];
         public List<string> SentKeys { get; } = [];
+        public List<JsonElement> ProcessRequests { get; } = [];
         public Runner(string executable, string assembly)
         {
             var start = new ProcessStartInfo(executable) {
@@ -227,9 +239,13 @@ internal static class NativeSmoke
                                 .Select(c => c.GetProperty("id").GetString()!).ToArray(); break;
                         case "host.appdock.call":
                             var apiParameters = message.GetProperty("params");
-                            Require(apiParameters.GetProperty("method").GetString() == "input.sendKeys", "only shared input API");
-                            SentKeys.Add(apiParameters.GetProperty("params").GetProperty("keys").GetString()!);
-                            result = new { ok = true, value = new { completion = "inputSubmitted", effectVerified = false } };
+                            var input = apiParameters.GetProperty("method").GetString() == "input.sendKeys";
+                            if (input) SentKeys.Add(apiParameters.GetProperty("params").GetProperty("keys").GetString()!);
+                            else {
+                                Require(apiParameters.GetProperty("method").GetString() == "processes.start", "only shared input/process API");
+                                ProcessRequests.Add(apiParameters.GetProperty("params").Clone());
+                            }
+                            result = new { ok = true, value = new { completion = input ? "inputSubmitted" : "processStarted", effectVerified = false } };
                             break;
                         default: throw new InvalidOperationException("unexpected host API call: " + request.GetString());
                     }

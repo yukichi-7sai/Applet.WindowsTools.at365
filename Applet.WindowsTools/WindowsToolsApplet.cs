@@ -64,6 +64,9 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             foreach (var shortcut in WindowsShortcuts.All)
                 commands.Add(Command(shortcut.Suffix, shortcut.Title,
                     ct => context.AppDock.CallAsync("input.sendKeys", new { keys = shortcut.Chord.ToShortcut() }, ct), shortcut.CommandDescription));
+            foreach (var command in WindowsProcessCommands.All)
+                commands.Add(Command(command.Id, command.Title,
+                    ct => context.AppDock.CallAsync("processes.start", command.CreateRequest(), ct), command.Description));
             await context.Commands.ReplaceAsync(commands, token);
             displaySeconds = Math.Clamp(context.Settings.Get("displayOffSeconds", 5), 1, 3600);
             var enabled = context.Settings.Get("autoLockEnabled", false);
@@ -81,7 +84,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             await gate.WaitAsync(token);
             try { token.ThrowIfCancellationRequested(); if (active) await action(token); }
             finally { gate.Release(); }
-        }) { Description = description };
+        }) { Description = description ?? CommandDescriptions.All[suffix] };
 
     private async Task Tick(CancellationToken token)
     {

@@ -64,5 +64,12 @@
   { "id": "desktop-add", "title": "仮想デスクトップを追加する", "keys": "Win+Ctrl+D", "description": "新しい仮想デスクトップを作成して切り替えます。" },
   { "id": "desktop-right", "title": "右の仮想デスクトップに切り替える", "keys": "Win+Ctrl+Right", "description": "右隣の仮想デスクトップへ移ります。切り替え先がなければ何も起きません。" },
   { "id": "desktop-left", "title": "左の仮想デスクトップに切り替える", "keys": "Win+Ctrl+Left", "description": "左隣の仮想デスクトップへ移ります。切り替え先がなければ何も起きません。" },
-  { "id": "desktop-close", "title": "現在の仮想デスクトップを閉じる", "keys": "Win+Ctrl+F4", "description": "現在の仮想デスクトップを閉じます。開いているアプリは終了せず、別の仮想デスクトップへ移ります。" }
+  { "id": "desktop-close", "title": "現在の仮想デスクトップを閉じる", "keys": "Win+Ctrl+F4", "description": "現在の仮想デスクトップを閉じます。開いているアプリは終了せず、別の仮想デスクトップへ移ります。" },
+  { "id": "media-play-pause", "title": "メディアの再生／一時停止", "keys": "MediaPlayPause", "description": "メディアキーに対応するアプリへ再生／一時停止を送ります。操作対象はWindowsと各アプリの処理に従い、特定のアプリは選択しません。" },
+  { "id": "media-stop", "title": "メディアの停止", "keys": "MediaStop", "description": "メディアキーに対応するアプリへ停止を送ります。停止に対応しないアプリでは動作しません。特定のアプリは選択しません。" },
+  { "id": "media-next-track", "title": "メディアの次のトラック", "keys": "MediaNextTrack", "description": "メディアキーに対応するアプリへ次のトラックへの移動を送ります。特定のアプリは選択しません。" },
+  { "id": "media-prev-track", "title": "メディアの前のトラック", "keys": "MediaPrevTrack", "description": "メディアキーに対応するアプリへ前のトラックへの移動を送ります。曲の先頭へ戻るか前の曲へ移るかは対象アプリに従います。" },
+  { "id": "volume-mute", "title": "音量のミュート／解除を切り替える", "keys": "VolumeMute", "description": "Windowsの音声出力のミュート状態を切り替えます。マイクのミュートやAppDockだけの音声設定は変更しません。" },
+  { "id": "volume-up", "title": "音量を上げる", "keys": "VolumeUp", "description": "Windowsの音声出力の音量を1回分上げます。変更幅やミュート中の動作はWindowsの処理に従います。" },
+  { "id": "volume-down", "title": "音量を下げる", "keys": "VolumeDown", "description": "Windowsの音声出力の音量を1回分下げます。変更幅やミュート中の動作はWindowsの処理に従います。" }
 ]

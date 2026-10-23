@@ -6,12 +6,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>Applet.WindowsTools.at365</AssemblyName>
     <RootNamespace>Applets.WindowsTools</RootNamespace>
-    <Version>0.2.2</Version>
+    <Version>0.2.4</Version>
     <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
     <AppDockRoot Condition="'$(AppDockRoot)' == ''">$(MSBuildThisFileDirectory)../../AppDock.at365</AppDockRoot>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="../windows-shortcuts.json" LogicalName="WindowsTools.Shortcuts" />
+    <EmbeddedResource Include="../windows-process-commands.json" LogicalName="WindowsTools.ProcessCommands" />
+    <EmbeddedResource Include="../command-descriptions.json" LogicalName="WindowsTools.CommandDescriptions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(AppDockRoot)/dotnet/AppDock.SDK/AppDock.SDK.csproj" />
