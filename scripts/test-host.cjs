@@ -40,7 +40,7 @@ const id = "at365.windows-tools";
 const catalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-shortcuts.json'), 'utf8'));
 const processCatalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-process-commands.json'), 'utf8'));
 const manifestCommands = JSON.parse(fs.readFileSync(path.join(root, 'extension.json'), 'utf8')).commands;
-const fixedCount = 13 + catalog.length + processCatalog.length;
+const fixedCount = 14 + catalog.length + processCatalog.length;
 const { overlayPage, closingAction } = require(path.join(host, 'scripts/shell-overlay-helper.cjs'));
 const dynamicId = id + ".send.shortcut-1";
 const windowIds = [
@@ -51,6 +51,7 @@ const windowIds = [
   "minimize",
   "maximize",
   "restore",
+  "toggle-maximize",
   "close",
 ].map((s) => id + "." + s);
 const settings = createDefaultSettings();
@@ -134,6 +135,7 @@ async function state(page) {
         .find((p) => p.url().startsWith("appdock://host/"));
       return page;
     }, "Host page missing");
+    await until(async () => (await snapshot(page)).startupReady, "Host startup incomplete");
     await until(
       async () =>
         (await state(page))?.commands.length === fixedCount &&
@@ -186,18 +188,17 @@ async function state(page) {
     assert.equal(probe.exitCode, 0, probeOutput);
     assert.equal(JSON.parse(fs.readFileSync(path.join(profile, 'shutdown-dialog.json'), 'utf8').replace(/^\uFEFF/, '')).cancelled, true);
     await page.evaluate(() => window.dock.setAppletApiPermissions({}));
-    await page.evaluate(() => window.dock.executeCommand('appdock.settings.open'));
-    await page.locator('.settings-categories').getByRole('button', { name: 'ショートカットキー', exact: true }).click();
-    const folderRow = page.locator('[data-shortcut-command="at365.windows-tools.open-folder"]');
-    await folderRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.open-folder').description, { exact: true }).waitFor();
-    await folderRow.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: path.join(profile, 'added-description.png') });
-    const recallRow = page.locator('[data-shortcut-command="at365.windows-tools.windows.recall"]');
-    await recallRow.getByText(/最小システム要件/).waitFor();
-    await recallRow.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: path.join(profile, 'static-description.png') });
     await page.evaluate(() => window.dock.executeCommand('appdock.commands.search'));
     const overlay = await overlayPage(page);
+    await overlay.getByRole('combobox').fill('最前面アプリの実行ファイル');
+    const folderRow = overlay.locator('[data-command-id="at365.windows-tools.open-folder"]');
+    await folderRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.open-folder').description, { exact: true }).waitFor();
+    await folderRow.scrollIntoViewIfNeeded();
+    await overlay.screenshot({ path: path.join(profile, 'added-description.png') });
+    await overlay.getByRole('combobox').fill('最大化／元に戻す');
+    const toggleRow = overlay.locator('[data-command-id="at365.windows-tools.toggle-maximize"]');
+    await toggleRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.toggle-maximize').description, { exact: true }).waitFor();
+    await overlay.screenshot({ path: path.join(profile, 'maximize-toggle.png') });
     await overlay.getByRole('combobox').fill('最小システム要件');
     await overlay.locator('[data-command-id="at365.windows-tools.windows.recall"]').getByText(/最小システム要件/).waitFor();
     await overlay.screenshot({ path: path.join(profile, 'description-search.png') });
@@ -370,7 +371,7 @@ async function state(page) {
     );
     success = true;
     console.log(
-      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 91 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
+      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 92 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
     );
     console.log(profile);
   } finally {
@@ -401,13 +402,13 @@ async function state(page) {
           hostHash: packaged ? hash(packaged) : null,
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
-            "91 fixed commands with static descriptions and panel actions",
-            "all 91 fixed commands remain public after dynamic replacement, restart and stop",
+            "92 fixed commands with static descriptions and panel actions",
+            "all 92 fixed commands remain public after dynamic replacement, restart and stop",
             "native Windows shutdown dialog has a choice, OK and Cancel and closes by cancellation without shutdown",
             "Windows Terminal opens through the exact launch command; only the new terminal window is closed",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
-            "MCP command descriptions / all 91 shortcut assignments dryRun and persistence / safe execution and execution denial",
+            "MCP command descriptions / all 92 shortcut assignments dryRun and persistence / safe execution and execution denial",
             "countdown cancel / restart / stop",
           ],
         },

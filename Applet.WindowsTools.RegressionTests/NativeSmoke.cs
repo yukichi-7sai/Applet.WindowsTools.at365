@@ -7,7 +7,7 @@ using Applets.WindowsTools;
 internal static class NativeSmoke
 {
     private static readonly string[] Suffixes = new[] {"cancel-display-off", "center", "close", "display-off", "full-height", "left",
-        "maximize", "minimize", "open-folder", "restore", "right", "toggle-auto-lock", "lock-windows" }
+        "maximize", "minimize", "open-folder", "restore", "toggle-maximize", "right", "toggle-auto-lock", "lock-windows" }
         .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Concat(WindowsProcessCommands.All.Select(c => c.Id)).Order().ToArray();
     private static void CheckCommands(JsonElement contributions) {
         var commands = contributions.GetProperty("commands").EnumerateArray().ToArray();
@@ -48,7 +48,7 @@ internal static class NativeSmoke
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 91 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine("PASS published DLL: activation, 92 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -92,7 +92,7 @@ internal static class NativeSmoke
             CheckCommands(contributions);
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "no tray registrations");
             Require(peer.PanelSeen, "panel registration");
-            Console.WriteLine("PASS published DLL activation, 79 commands, panel, no tray");
+            Console.WriteLine("PASS published DLL activation, 92 commands, panel, no tray");
             var cursor = Cursor.Position;
             void Execute(string suffix, bool preservesForeground = true)
             {
@@ -136,6 +136,14 @@ internal static class NativeSmoke
                 rect = native.GetRect(form.Handle);
                 Require(Math.Abs(rect.CenterX - area.CenterX) <= 1 && Math.Abs(rect.CenterY - area.CenterY) <= 1, "gesture uses original target");
                 Require(native.GetRect(other.Handle) == untouched && GetForegroundWindow() == foreground && Cursor.Position == cursor, "gesture preserves alternate foreground and cursor");
+                peer.Request("command.execute", new { id = "at365.windows-tools.toggle-maximize", invocation });
+                PumpUntil(() => form.WindowState == FormWindowState.Maximized);
+                peer.Request("command.execute", new { id = "at365.windows-tools.toggle-maximize", invocation });
+                PumpUntil(() => form.WindowState == FormWindowState.Normal);
+                Require(native.GetRect(form.Handle) == rect, "maximize toggle restores gesture target bounds");
+                Require(native.GetRect(other.Handle) == untouched, "maximize toggle leaves alternate window bounds unchanged");
+                Require(Cursor.Position == cursor, "maximize toggle preserves cursor");
+                Console.WriteLine($"Gesture toggle foreground: before={foreground}; after={GetForegroundWindow()}; target={form.Handle}");
                 peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "wrong-process", window = form.Handle.ToString(), process = "0", source = "gesture" } });
                 Require(native.GetRect(form.Handle) == rect && native.GetRect(other.Handle) == untouched, "invalid process does not fall back");
                 peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "wrong-name", window = form.Handle.ToString(), process = "nonexistent-gesture-target", source = "gesture" } });
@@ -146,7 +154,7 @@ internal static class NativeSmoke
                     peer.Request("command.execute", new { id = "at365.windows-tools.left", invocation = new { session = "expired", window = expiredHandle, process = Process.GetCurrentProcess().ProcessName, source = "gesture" } });
                     Require(native.GetRect(form.Handle) == rect && native.GetRect(other.Handle) == untouched, "destroyed target does not fall back");
                 }
-                Console.WriteLine("PASS gesture process name (case-insensitive), legacy PID, mismatched/expired target exclusion, foreground and cursor preservation");
+                Console.WriteLine("PASS gesture process name (case-insensitive), legacy PID, mismatched/expired target exclusion, maximize toggle target and bounds");
             }
             form.Activate(); SetForegroundWindow(form.Handle);
             if (!capturedTarget) PumpUntil(() => GetForegroundWindow() == form.Handle);
@@ -156,6 +164,13 @@ internal static class NativeSmoke
             Execute("restore");
             PumpUntil(() => form.WindowState == FormWindowState.Normal);
             Require(native.GetRect(form.Handle) == normalBounds, "restore normal bounds");
+            for (var cycle = 0; cycle < 2; cycle++) {
+                Execute("toggle-maximize");
+                PumpUntil(() => form.WindowState == FormWindowState.Maximized);
+                Execute("toggle-maximize");
+                PumpUntil(() => form.WindowState == FormWindowState.Normal);
+                Require(native.GetRect(form.Handle) == normalBounds, "maximize toggle restores normal bounds");
+            }
             Execute("minimize", false);
             PumpUntil(() => form.WindowState == FormWindowState.Minimized);
             // A minimized window is no longer foreground; restore the test fixture ourselves.
@@ -173,7 +188,7 @@ internal static class NativeSmoke
             Execute("close", false);
             PumpUntil(() => form.IsDisposed);
             Require(closeRequests == 2, "target accepted second close request");
-            Console.WriteLine("PASS center, maximize/restore, minimize, cancelable close, accepted close");
+            Console.WriteLine("PASS center, maximize/restore, repeated maximize toggle, minimize, cancelable close, accepted close");
             peer.Request("deactivate", new { });
             peer.CloseInput();
             Console.WriteLine("PASS deactivate and process exit");

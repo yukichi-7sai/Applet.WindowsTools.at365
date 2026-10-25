@@ -5,7 +5,7 @@ using Applets.WindowsTools;
 
 internal static class Program
 {
-    private static int FixedCount => 13 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count;
+    private static int FixedCount => 14 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count;
     [STAThread]
     private static int Main(string[] args)
     {
@@ -104,7 +104,7 @@ internal static class Program
             Check(dialog.GetProperty("script").GetString() == "(New-Object -ComObject Shell.Application).ShutdownWindows()");
             Check(!dialog.GetProperty("showConsole").GetBoolean());
             await context.Change("displayOffSeconds", 15);
-            Check(context.Handlers.Count == 91 && context.Values.Count == 1 && context.SentKeys.Count == 0);
+            Check(context.Handlers.Count == 92 && context.Values.Count == 1 && context.SentKeys.Count == 0);
             context.ApiFailure = true;
             await ThrowsAsync(() => context.Execute("shutdown-windows"));
             Check(context.ProcessRequests.Count == 5);
@@ -190,11 +190,11 @@ internal static class Program
         }));
         tests.Add(("all window commands survive settings replacement and stop on deactivate", async () => {
             var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
-            var suffixes = new[] { "left", "right", "full-height", "center", "minimize", "maximize", "restore", "close" };
+            var suffixes = new[] { "left", "right", "full-height", "center", "minimize", "maximize", "restore", "toggle-maximize", "close" };
             var commands = new[] { MoveCommand.Left, MoveCommand.Right, MoveCommand.FullHeight, MoveCommand.Center,
-                MoveCommand.Minimize, MoveCommand.Maximize, MoveCommand.Restore, MoveCommand.Close };
+                MoveCommand.Minimize, MoveCommand.Maximize, MoveCommand.Restore, MoveCommand.ToggleMaximize, MoveCommand.Close };
             await applet.ActivateAsync(context, default);
-            Check(context.LastPanel!.Actions!.Count == 12);
+            Check(context.LastPanel!.Actions!.Count == 13);
             foreach (var suffix in suffixes) await context.Execute(suffix);
             Check(platform.WindowCommands.SequenceEqual(commands));
             await context.Change("displayOffSeconds", 20);
@@ -202,10 +202,10 @@ internal static class Program
             Check(context.Handlers.Count == FixedCount);
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
             await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".close"](cancellation.Token));
-            Check(platform.WindowCommands.Count == 8);
+            Check(platform.WindowCommands.Count == 9);
             var queued = context.Handlers[context.ExtensionId + ".close"];
             await applet.DeactivateAsync(default); await queued(default);
-            Check(platform.WindowCommands.Count == 8);
+            Check(platform.WindowCommands.Count == 9);
         }));
         var failed = 0;
         foreach (var (name, test) in tests) {

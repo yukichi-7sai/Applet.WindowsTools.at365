@@ -20,6 +20,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
         ("minimize", "ウィンドウを最小化", MoveCommand.Minimize),
         ("maximize", "ウィンドウを最大化", MoveCommand.Maximize),
         ("restore", "ウィンドウを元のサイズに戻す", MoveCommand.Restore),
+        ("toggle-maximize", "ウィンドウを最大化／元に戻す", MoveCommand.ToggleMaximize),
         ("close", "ウィンドウを閉じる", MoveCommand.Close)
     ];
     public WindowsToolsApplet() : this(new WindowsPlatform()) { }

@@ -3,7 +3,7 @@
   "id": "at365.windows-tools",
   "name": "Applet.WindowsTools.at365",
   "displayName": "WindowsTools.at365",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "minimumHostVersion": "0.85.9",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
@@ -130,6 +130,12 @@
       "id": "at365.windows-tools.restore",
       "title": "ウィンドウを元のサイズに戻す",
       "description": "対象ウィンドウへ通常のサイズに戻す要求を送ります。移動や高さ調整の取り消し、最小化した別のアプリの呼び戻しではありません。ジェスチャーでは開始時のウィンドウが対象です。",
+      "automation": true
+    },
+    {
+      "id": "at365.windows-tools.toggle-maximize",
+      "title": "ウィンドウを最大化／元に戻す",
+      "description": "対象ウィンドウが最大化中なら元のサイズに戻し、それ以外なら最大化を要求します。対応しないウィンドウでは適用されない場合があります。ジェスチャーでは開始時のウィンドウ、それ以外では実行時の最前面ウィンドウが対象です。",
       "automation": true
     },
     {

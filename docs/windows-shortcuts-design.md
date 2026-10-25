@@ -15,9 +15,9 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 静的な定義の正本は`windows-shortcuts.json`。ID・表示名・キー・説明を持ち、DLLへ埋め込んで読み込む。実行時に外部の定義ファイルや設定へ依存しない。`scripts/update-shortcut-manifest.ps1`で同じ定義をmanifestへ反映し、`-Check`で一致を検証する。
 
-コマンドIDは`at365.windows-tools.windows.<固定ID>`、専用ロックは`at365.windows-tools.lock-windows`。固定コマンドは合計91件となる。静的コマンドも従来のReplaceAsyncへ毎回含め、設定変更後も残す。manifestにも宣言し、停止中の割り当て候補と説明を保持する。初期キー割り当ては追加しない。全固定コマンドのautomation=trueを生成し、共通操作API（MCPを含む）で一覧取得・割当編集・直接実行を許可する。実行時の既存権限検査は維持する。
+コマンドIDは`at365.windows-tools.windows.<固定ID>`、専用ロックは`at365.windows-tools.lock-windows`。固定コマンドは合計92件となる。静的コマンドも従来のReplaceAsyncへ毎回含め、設定変更後も残す。manifestにも宣言し、停止中の割り当て候補と説明を保持する。初期キー割り当ては追加しない。全固定コマンドのautomation=trueを生成し、共通操作API（MCPを含む）で一覧取得・割当編集・直接実行を許可する。実行時の既存権限検査は維持する。
 
-本体の宣言・開始・動的置換と.NET Runtimeの共通上限は256件で、登録91件はその範囲に収まる。名前空間・重複・タイトル・説明の検証と、拒否時の元の登録への復元は維持する。
+本体の宣言・開始・動的置換と.NET Runtimeの共通上限は256件で、登録92件はその範囲に収まる。名前空間・重複・タイトル・説明の検証と、拒否時の元の登録への復元は維持する。
 
 ## 表示と説明
 
@@ -31,7 +31,7 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 共通の送信文法へWin単独、Pause、PrintScreen、Period、Semicolon、Slash、Plus、Minusを追加する。記号はSDKでは意味を保持し、入力workerで送信対象のスレッドのGetKeyboardLayoutとVkKeyScanExWにより仮想キーと必要な修飾キーへ解決する。配列を変更・キャッシュしない。未対応の記号変換は失敗として返す。日本語／英語配列のセミコロン・プラスの違いを固定のOEMキーで代用しない。1回の送信で必ずキーを解放し、押しっぱなしは作らない。
 
-最低本体版は0.85.9。WindowsTools0.2.5では固定コマンドの公開宣言を追加し、キー送信の実装と既存の呼び出し契約は変更しない。設定・保存ファイルの追加削除や破壊的変更がないため、Appletだけをパッチ更新する。
+最低本体版は0.85.9。固定コマンドはmanifestのautomation宣言で公開し、キー送信の実装と既存の呼び出し契約を維持する。
 
 ## 検証方針
 
@@ -47,6 +47,6 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 windows-process-commands.jsonを正本にターミナル・シャットダウン・再起動・サインアウト・終了選択画面の5件を定義し、DLLへ埋め込む。実行は本体のprocesses.startへ委譲し、既存の利用許可・取消・寿命を使う。終了選択画面は固定PowerShellスクリプトでShell.Application.ShutdownWindowsを呼び、Alt+F4は使わない。即時電源操作はshutdown.exeをシステムディレクトリから起動し、/fや待ち時間を加えない。ターミナルは固定PowerShellスクリプトのStart-Processでwt.exeを起動し、実行エイリアスを通常のEXEとして事前検査しない。
 
-固定コマンドは91件。全件を外部公開し、既定の割り当て・設定・保存ファイル・既存IDは維持する。WindowsToolsは0.2.5、最低本体版は0.85.9。本体のMCP基盤は変更しない。電源操作は模擬APIで引数を検証し、実シャットダウン・再起動・サインアウトは自動実行しない。
+固定コマンドは92件。全件を外部公開し、既定の割り当て・設定・保存ファイル・既存IDは維持する。WindowsToolsは0.2.6、最低本体版は0.85.9。本体のMCP基盤は変更しない。電源操作は模擬APIで引数を検証し、実シャットダウン・再起動・サインアウトは自動実行しない。
 
-既存12件の説明はcommand-descriptions.jsonを正本にし、DLLへ埋め込んでCommandDescriptionsから実行時登録へ渡す。manifest生成も同じ定義を使い、91件すべてのdescriptionの存在と実行時/宣言の一致を検証する。
+ウィンドウ操作など13件の説明はcommand-descriptions.jsonを正本にし、DLLへ埋め込んでCommandDescriptionsから実行時登録へ渡す。manifest生成も同じ定義を使い、92件すべてのdescriptionの存在と実行時/宣言の一致を検証する。

@@ -12,7 +12,7 @@
 
 ## Windows標準コマンド
 
-[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。既存12件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは91件です。
+[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。ウィンドウ操作など13件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは92件です。
 
 定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.85.9です。
 
@@ -71,13 +71,13 @@ NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホス�
 
 ## 実装上の補足
 
-WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。8つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も91件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。全91件をmanifestのcommands[].automation=trueで共通操作API（MCPを含む）へ公開します。公開権限はmanifestを正本とし、runtime登録から権限を追加しません。
+WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。9つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も92件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。全92件をmanifestのcommands[].automation=trueで共通操作API（MCPを含む）へ公開します。公開権限はmanifestを正本とし、runtime登録から権限を追加しません。
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。ウィンドウ操作の共通API契約は維持します。メディア・音量コマンドでは、本体とSDKの送信キー文法へ7キーを追加しています。
 
 ジェスチャーのprocessは本体が渡す拡張子なしのプロセス名として、HWNDの所有プロセス名と大文字小文字を区別せず照合します。従来の数値PIDを渡す呼出しも照合して受け付けます。不正なHWND・一致しない名前/PID・消滅した対象では操作せず、別の前面ウィンドウへ切り替えません。NativeSmokeは実際の本体と同じ名前形式で左右移動・高さ調整等を検証します。
 
-dynamic-commands capabilityは固定91件のReplaceAsyncに使用します。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
+dynamic-commands capabilityは固定92件のReplaceAsyncに使用します。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
 
 ## 公開設定
 
@@ -87,7 +87,7 @@ dynamic-commands capabilityは固定91件のReplaceAsyncに使用します。無
 
 GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みます。公開schema・読取り・更新、非公開項目/不正値の拒否、書込許可、dryRun、古いrevisionの拒否と、各Applet実プロセスへの反映を確認します。実利用Codex設定やモデルは使用しません。
 
-scripts/commands-mcp-check.cjsで全91件の公開・説明・割当候補を確認し、無効な試験用割当のdryRun/保存/取得/削除、既存割当保持と安全な消灯予約取消のMCP実行・実行許可の拒否を確認します。シャットダウン・再起動・サインアウト・ロックや撮影・録画等はこの試験で実行しません。
+scripts/commands-mcp-check.cjsで全92件の公開・説明・割当候補を確認し、無効な試験用割当のdryRun/保存/取得/削除、既存割当保持と安全な消灯予約取消のMCP実行・実行許可の拒否を確認します。シャットダウン・再起動・サインアウト・ロックや撮影・録画等はこの試験で実行しません。
 
 ## 設定画面の構成
 

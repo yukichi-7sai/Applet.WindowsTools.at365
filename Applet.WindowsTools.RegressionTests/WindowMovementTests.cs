@@ -15,6 +15,16 @@ internal static class WindowMovementTests
                     Check(windows.Actions.SequenceEqual(new[] { action }) && windows.ForegroundReads == 1 && windows.Moves == 0);
                 }
             }),
+            ("maximize toggle reads current state of the original target on each execution", () => {
+                var windows = new FakeWindows(new(100, 200, 700, 800));
+                var mover = new WindowMover(windows);
+                foreach (var maximized in new[] { false, true, false, true }) {
+                    windows.Maximized = maximized;
+                    mover.Execute(MoveCommand.ToggleMaximize);
+                    Check(windows.Actions[^1] == (maximized ? WindowAction.Restore : WindowAction.Maximize));
+                }
+                Check(windows.Actions.Count == 4 && windows.ForegroundReads == 4 && windows.Moves == 0);
+            }),
             ("canceled window command does not read or operate a target", () => {
                 foreach (var command in Enum.GetValues<MoveCommand>()) {
                     var windows = new FakeWindows(new(100, 200, 700, 800));
@@ -137,7 +147,7 @@ internal static class WindowMovementTests
         public bool Valid = true, SingleMonitor, RejectMoves;
         public bool Maximized;
         public List<WindowAction> Actions = [];
-        public bool IsMaximized(nint window) => Maximized;
+        public bool IsMaximized(nint window) { Check(window == 42); return Maximized; }
         public void RequestAction(nint window, WindowAction action) { Check(window == 42); Actions.Add(action); }
         public int Moves, ForegroundReads;
         public Action? AfterMove;

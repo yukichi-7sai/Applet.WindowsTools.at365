@@ -1,6 +1,6 @@
 namespace Applets.WindowsTools;
 
-internal enum MoveCommand { Left, Right, FullHeight, Center, Close, Minimize, Maximize, Restore }
+internal enum MoveCommand { Left, Right, FullHeight, Center, Close, Minimize, Maximize, Restore, ToggleMaximize }
 internal enum WindowAction { Close, Minimize, Maximize, Restore }
 internal interface IWindowSystem
 {
@@ -29,6 +29,9 @@ internal sealed class WindowMover(IWindowSystem windows)
             case MoveCommand.Minimize: windows.RequestAction(window, WindowAction.Minimize); return;
             case MoveCommand.Maximize: windows.RequestAction(window, WindowAction.Maximize); return;
             case MoveCommand.Restore: windows.RequestAction(window, WindowAction.Restore); return;
+            case MoveCommand.ToggleMaximize:
+                windows.RequestAction(window, windows.IsMaximized(window) ? WindowAction.Restore : WindowAction.Maximize);
+                return;
             case MoveCommand.Center:
                 // Keep maximized state intact; Restore is a separate explicit command.
                 if (windows.IsMaximized(window)) return;
