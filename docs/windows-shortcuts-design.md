@@ -47,6 +47,6 @@ WindowsToolsの静的コマンドとして、Windowsの操作を名前で選び�
 
 windows-process-commands.jsonを正本にターミナル・シャットダウン・再起動・サインアウト・終了選択画面の5件を定義し、DLLへ埋め込む。実行は本体のprocesses.startへ委譲し、既存の利用許可・取消・寿命を使う。終了選択画面は固定PowerShellスクリプトでShell.Application.ShutdownWindowsを呼び、Alt+F4は使わない。即時電源操作はshutdown.exeをシステムディレクトリから起動し、/fや待ち時間を加えない。ターミナルは固定PowerShellスクリプトのStart-Processでwt.exeを起動し、実行エイリアスを通常のEXEとして事前検査しない。
 
-固定コマンドは92件。全件を外部公開し、既定の割り当て・設定・保存ファイル・既存IDは維持する。WindowsToolsは0.2.6、最低本体版は0.85.9。本体のMCP基盤は変更しない。電源操作は模擬APIで引数を検証し、実シャットダウン・再起動・サインアウトは自動実行しない。
+固定コマンドは92件。全件を外部公開し、既定の割り当て・設定・保存ファイル・既存IDは維持する。WindowsToolsは0.2.7、最低本体版は0.85.9。本体のMCP基盤は変更しない。電源操作は模擬APIで引数を検証し、実シャットダウン・再起動・サインアウトは自動実行しない。
 
 ウィンドウ操作など13件の説明はcommand-descriptions.jsonを正本にし、DLLへ埋め込んでCommandDescriptionsから実行時登録へ渡す。manifest生成も同じ定義を使い、92件すべてのdescriptionの存在と実行時/宣言の一致を検証する。

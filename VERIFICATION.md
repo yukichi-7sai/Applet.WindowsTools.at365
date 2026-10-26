@@ -1,7 +1,22 @@
 # 検証記録
 
-対象の現行版は`0.2.6`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
+対象の現行版は`0.2.7`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
 
+## 2026-10-26: 全変更Appletのローカルコミット照合
+
+- 模擬API標準43/43と発行成功を再利用。製品・試験・SDK／Runtimeと配布DLLは不変。表示名／パッチ版と対応文書だけを今回の差分として確認。
+- 各repoの実装時入力一覧と現在のソースを照合。host toolchain／lockfile／SDK／Runtimeは一致し、package.jsonのdependencies／devDependencies／scripts／packageManager／enginesも一致。UI側は実装時から更新されているため、最新の固定EXEで4Appletの表示名／版・起動停止を追加検証し成功。.artifacts/commit-validation-applets-20261026/reuse.jsonへ試験単位の判断を記録。
+- 全4件のfeed／ZIP hashを確認。新たな製品修正はなく、現発行版を維持する。新GUI証跡は../Applet.WebBrowserTools.at365/.artifacts/commit-validation-applets-20261026/のpublished-smoke.log、smoke-result.json。設定は隔離profileのみで、既定ショートカット初期化をfixtureで抑止し、Pause／F13～F24の送信・OS登録なし。
+- commit前後の入力・stage tree／commit treeとcommit SHAは各.artifacts/commit-validation-applets-20261026/へ保存する。今回の差分を1repoずつローカルcommitし、push・Release・実利用deployは行わない。旧検証資料は参照中として保持、削除0件。
+## 2026-10-26: 表示名と発行（0.2.7）
+
+- 既存のdisplayName変更を確認。表示名はWindowsTools、内部name／id／entry・設定・公開APIは保持。開始時はmainで未コミット変更があったため、自動pull／stashは行わず既存差分を保持した。通常修正としてパッチ番号を1つ更新。
+- 発行前にmanifest／版／発行スクリプトと影響先をレビューし、阻害指摘なし。レビュー記録は.artifacts/displayname-publish-20261026/review.json。
+- Release構成の模擬APIによる既存回帰43/43成功。発行DLLの版一致と隔離ホストでの起動／停止成功。キー送信・電源・ロック等の実操作は実行していない。
+- publish.batは終了コード0。40.ARTIFACTの配布manifest／実行ファイル／update.jsonの版、ZIPの全エントリー・サイズ・SHA256と配布フォルダーの一致を確認。package-result.jsonに記録。既存deploy関連ファイルを保持。
+- 固定の発行済みAppDock 0.94.4へ4つの発行物をそのままコピーし、コピーhash一致、snapshotの内部名／表示名／版と管理画面の4行を確認。Watch／WebBrowserTools／WindowsToolsの起動・停止、ホストの終了コード0を確認。共通証跡は../Applet.WebBrowserTools.at365/.artifacts/displayname-publish-20261026/のpublished-smoke.cjs、smoke-result.json、displaynames.png、host-inputs.json。参照ソースはAppDock main 0.94.3で、固定EXEは0.94.4。
+- 各repoの同名.artifactsフォルダーへ入力hash、コマンド／終了コード、完全ログとそのhashを保存。検証後の製品入力は一致。使用方法と設計の版表記のみの文書修正は製品試験へ影響しない。ホスト全回帰／旧GUI全回帰／実ブラウザーや物理入力は変更範囲外として未実施。
+- 整理は各.artifacts直下を列挙してcleanup.jsonへ記録。今回の試験は同じ方式の成功1回として保持。他の古い資料は参照・実行方式・所有が確定しないため保持、削除0件。隔離ホストとAppletは終了済み。commit／push／Release／実利用deployなし。
 ## 2026-10-26: 0.2.6 コミット前照合
 
 - 利用者から実利用での動作成功とコミット・GitHub／AQUA双方へのpush依頼を受領。対象は最大化／復元トグルと関連登録・説明・試験・文書の15ファイル。発行前レビューを再確認し阻害指摘なし。本体と兄弟Appletの変更は含めない。
