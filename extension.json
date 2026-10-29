@@ -5,7 +5,7 @@
   "displayName": "WindowsTools",
   "icon": "settings",
   "tagline": "毎日のWindows操作を、もっと軽やかに。",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "minimumHostVersion": "0.85.9",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
@@ -22,20 +22,20 @@
     {
       "key": "displayOffSeconds",
       "automation": true,
-      "title": "ディスプレイが消灯するまでの秒数",
+      "title": "ディスプレイ消灯コマンドの待機時間（秒）",
       "type": "number",
       "default": 5,
       "minimum": 1,
       "maximum": 3600,
       "step": 1,
-      "description": "消灯コマンドからの待ち時間。再実行すると予約し直します。"
+      "description": "[command:at365.windows-tools.display-off] を実行してから、ディスプレイを消灯するまでの時間です。再実行すると予約し直します。"
     },
     {
       "key": "autoLockEnabled",
       "title": "無操作時の自動ロック",
       "type": "boolean",
       "default": false,
-      "description": "マウスとキーボードの操作がない場合にロックします。有効にした時点から監視します。"
+      "description": "指定した時間、マウス・キーボードの操作がなかった場合に、Windowsをロックします。有効にした時点から無操作時間を数え直します。"
     },
     {
       "key": "autoLockMinutes",
@@ -45,22 +45,22 @@
       "minimum": 1,
       "maximum": 1440,
       "step": 1,
-      "description": "1〜1440分。変更時には監視時間をリセットします。"
+      "description": "1〜1440分で指定します。変更した時点から無操作時間を数え直します。"
     }
   ],
   "settingSections": [
     {
       "id": "display",
-      "title": "ディスプレイ",
-      "description": "消灯コマンドを実行したあとの待ち時間です。",
+      "title": "コマンドの動作",
+      "description": "消灯予約は [command:at365.windows-tools.cancel-display-off] で取り消せます。",
       "settings": [
         "displayOffSeconds"
       ]
     },
     {
       "id": "lock",
-      "title": "自動ロック",
-      "description": "PCを操作していないときのロックを設定します。",
+      "title": "セキュリティ",
+      "description": "AppDockとWindowsToolsの起動中に動作します。[command:at365.windows-tools.toggle-auto-lock] からも自動ロックの有効／無効を切り替えられます。",
       "settings": [
         "autoLockEnabled",
         "autoLockMinutes"

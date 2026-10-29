@@ -1,11 +1,22 @@
 # 検証記録
 
+## 2026-10-30: 設定分類とコマンド参照タグ 0.2.9
+
+- main `235bdc6480ab4e1b1c2e7431d08f4ef752e15260` / origin/main追跡・cleanを確認し、通常ユーザー環境で `pull --ff-only` はAlready up to date。WindowsToolsだけを対象に、「コマンドの動作」「セキュリティ」へ分類と説明を整理した。消灯待機の項目名を「ディスプレイ消灯コマンドの待機時間（秒）」へそろえた。
+- 説明に消灯・消灯予約取消・自動ロック切替の3つの `[command:ID]` を埋め込んだ。タグの解釈・リンク描画・パレット初期選択は本体側の設計段階のため、このAppletへ独自実装していない。発行済み本体0.104.2では原文のタグ表示となることをGUIで確認した。最低本体版0.85.9を保ち、設定キー3件・型/範囲/既定値/公開範囲・セクションIDと所属・固定コマンド92件・全C#実行処理が変更前と同じことを照合した。
+- 発行前に差分・タグ参照先・保存/監視への影響・必要な検証をレビューし、阻害事項なし。設定や保存ファイルの追加削除と破壊的変更がないため0.2.8→0.2.9のパッチ更新とし、manifestとプロジェクトの版をそろえた。利用文書と開発ガイドも更新した。レビューは `.artifacts/settings-layout-20261030/review.json`。
+- .NET SDK 10.0.403で標準模擬API回帰 **43/43**、Windows PowerShell 5.1のmanifest生成チェック成功。取消・無操作判定・自動ロック・92件の登録/設定更新等を確認し、実消灯・実ロック・実キー送信は行っていない。コミット前の判定では、この依頼内の成功結果を再利用し、無関係な本体全回帰・nativeウィンドウ操作試験は実行していない。
+- `publish.bat` で `A:\40.ARTIFACT\Applet.WindowsTools.at365` へ発行成功。配布manifestとソース、ZIP内3ファイルと配布フォルダーのsize/SHA256、feedの版/最低本体/ZIP size/hash、DLLのProductVersionを照合した。ZIPは31,959 bytes / SHA256 `e19c75035cd665fe65f2bbf63d069d8dcf428a73cf86688b8c0ce8b4fd06ea9d`、DLLは `a8a2db14f6f137ccb9a8129335fc5bd2abcdc43e143470ba371475e6e29db0af`。既存のdeployスクリプト・利用者設定は標準の保持規則に従った。
+- 本体0.104.2の固定配布物と発行Appletを専用profileへコピーしてGUI **4群** が成功。既存の7秒/37分/無効から開始し、13秒のEnter保存・19秒入力のEscape取消・41分のblur保存、無関係な設定値の保持、実プロセス再起動後の復元を確認した。明るい広幅/暗い狭幅も確認し、内容幅/scrollWidthは880/880と500/500で横はみ出しなし。狭幅のWindow指定760は本体の最小幅で900になった条件として扱う。Pause/F13〜F24のOS送信・登録はなし。初回は既定値falseを保存から省く仕様に対する試験の期待値で失敗し、有効値で照合するよう試験だけを修正して成功した。初回ログは `attempt-1/` に保持した。
+- 証跡は `.artifacts/settings-layout-20261030/`。変更前37入力・依頼内40入力のSHA256、回帰/生成チェック/発行/GUIの完全ログ、`checks.json`・`published.json`・`ui-result.json`、画面画像を保持する。固定EXEのコピー元/コピー先SHA256は `f163f9a646276f38e6dd3046773f1ec0a4fed62fafaa2907df7557ff9faca834` で一致。最終の文書/入力/ログとstage/commitの照合は `validation.json`・`stage.json`・`commit.json` に記録する。
+- 関連する開発・検証ファイルだけをコミット対象とし、push・GitHub Release・実利用先deployは行わない。GUIプロセスは正常終了し、今回の成功profile1件と解決済み失敗ログ・再利用資料を保持した。既存の別作業の生成物は削除していない。本体の共通リンク機能と設計worktreeは変更していない。
+
 ## 2026-10-29: 情報metadataのコミット前照合
 
 - icon/taglineと版の変更、配置manifest/entry、更新ZIP/feedを先行発行時の入力とSHA256へ照合し一致。本体0.101.9の固定EXEでも既存8Appletの情報表示を確認した。実装入力は不変で、先行の発行・表示試験を再利用し、追加の版更新・再発行は行わない。
 - 共通レビューと再利用判断は`../AppDock.at365/.artifacts/commit-validation-applet-information-20261029/{review,reuse,validation}.json`、stage/commitとGitHub origin/mainの照合結果は同じ場所の`stage.json`・`commits.json`・`push.json`を参照する。先行の検証資料は保持。実サービス・実利用のApplet起動・GitHub Release・実利用deployは今回の検証対象外。
 
-対象の現行版は`0.2.8`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
+対象の現行版は`0.2.9`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
 
 ## 2026-10-29: Applet情報のアイコンとキャッチコピー 0.2.8
 
