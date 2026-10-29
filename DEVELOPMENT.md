@@ -95,6 +95,8 @@ scripts/commands-mcp-check.cjsで全92件の公開・説明・割当候補を確
 
 カードは「コマンドの動作」「セキュリティ」とし、関連するコマンドを説明文の `[command:コマンドID]` で指定します。タグのリンク表示とパレットの初期選択は本体側の対応対象です。対応前の本体では説明文の文字列として表示し、Applet側に専用の解釈・描画・実行経路を持ちません。
 
+分類カードには機能固有の説明を置かず、説明と関連コマンドのタグは対象の設定項目へ配置します。今後、同じ分類の配下へ別のコマンド設定やセキュリティ機能を追加できる構成を保ちます。
+
 ## 共通の運用
 
 文書構成・生成物・版更新・配布は[共通手順](../AppDock.at365/docs/development-workflow.md)、[文書方針](../AppDock.at365/docs/documentation.md)、[発行と配置](../AppDock.at365/docs/publishing.md)、[更新パッケージ](../AppDock.at365/docs/updates.md)、[生成物の整理](../AppDock.at365/DEVELOPMENT.md#作業完了時のテストフォルダー整理)を参照する。Applet固有の実行条件と結果は[検証記録](VERIFICATION.md)へ記載する。

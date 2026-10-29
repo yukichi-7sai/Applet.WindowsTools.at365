@@ -1,5 +1,14 @@
 # 検証記録
 
+## 2026-10-30: 分類説明の除去と自動ロック説明の移動 0.2.10
+
+- main `3d59e934df296f32f3a4fbd86899e4038deff23e` / cleanから開始し、`pull --ff-only` はAlready up to date。「コマンドの動作」のdescriptionを削除し、「セキュリティ」の自動ロック説明と切替タグを `autoLockEnabled.description` へ移動した。両セクションともdescriptionなしとし、今後別機能を配下へ追加できる分類にした。項目にある消灯タグと移動した自動ロックタグの2件を保持した。
+- 設定3件・固定92コマンド・C#実行処理・最低本体版・保存仕様は不変。発行前レビューで阻害事項なし。表示メタデータの修正のため0.2.9→0.2.10へパッチ更新し、manifestとプロジェクトの版をそろえた。開発ガイドへ分類と項目説明の使い分けを記載した。
+- 直前の模擬API回帰43/43を再利用。全C#実装・試験とSDK定義のSHA256一致、共通SDKの基点 `bc5431b` からのソース差分なし・未追跡ソースなしを確認した。再利用元の完全ログhashと判断は `.artifacts/settings-descriptions-20261030/review.json`。manifest生成チェックは今回も成功した。
+- 標準 `publish.bat` で40.ARTIFACTへ発行成功。ソース/配布manifest、feed/ZIP、ZIP内3ファイルと配布フォルダーのsize/SHA256、DLL版0.2.10を照合した。ZIPは31,945 bytes / SHA256 `99535ff99cbcaa41c1221d43fcbb79f2a8dbf345078c065c7ae07fe6b54d67de`、DLL SHA256 `8b86831ed4c37d0de75b2f13443cdf02b2a28ecfb5ec45272fb203cf0d7477e4`。
+- 固定本体0.104.2と発行Appletの隔離GUI4群が成功。自動ロック説明が対象項目のfieldset内にあること、既存値、Enter/blur保存・Escape取消・実プロセス再起動保持を確認した。明るい広幅/暗い狭幅の画面画像で分類の説明がなく、項目に説明があることも確認した。本体最小幅による実際の狭幅900、本文の幅/scrollWidthは500/500で、長い説明の横はみ出しはなし。実消灯・ロック・保護キーの送信/登録は行っていない。
+- 証跡は `.artifacts/settings-descriptions-20261030/` の変更前入力・レビュー・完全ログ・`published.json`・`ui-result.json`・画面画像。最終照合とstage/commitは `validation.json`・`stage.json`・`commit.json` に保存する。GUIの先頭チェック名は直前の試験から引き継いだ名称だが、今回のタグ数は2件としてmanifestと実画面を確認した。成功profile1件を保持し、削除0件。push・Release・実利用先deployは行わない。
+
 ## 2026-10-30: 設定分類とコマンド参照タグ 0.2.9
 
 - main `235bdc6480ab4e1b1c2e7431d08f4ef752e15260` / origin/main追跡・cleanを確認し、通常ユーザー環境で `pull --ff-only` はAlready up to date。WindowsToolsだけを対象に、「コマンドの動作」「セキュリティ」へ分類と説明を整理した。消灯待機の項目名を「ディスプレイ消灯コマンドの待機時間（秒）」へそろえた。
@@ -16,7 +25,7 @@
 - icon/taglineと版の変更、配置manifest/entry、更新ZIP/feedを先行発行時の入力とSHA256へ照合し一致。本体0.101.9の固定EXEでも既存8Appletの情報表示を確認した。実装入力は不変で、先行の発行・表示試験を再利用し、追加の版更新・再発行は行わない。
 - 共通レビューと再利用判断は`../AppDock.at365/.artifacts/commit-validation-applet-information-20261029/{review,reuse,validation}.json`、stage/commitとGitHub origin/mainの照合結果は同じ場所の`stage.json`・`commits.json`・`push.json`を参照する。先行の検証資料は保持。実サービス・実利用のApplet起動・GitHub Release・実利用deployは今回の検証対象外。
 
-対象の現行版は`0.2.9`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
+対象の現行版は`0.2.10`。以下は記録した条件での検証結果であり、外部サービスや実機条件の現在の動作保証とは区別する。
 
 ## 2026-10-29: Applet情報のアイコンとキャッチコピー 0.2.8
 

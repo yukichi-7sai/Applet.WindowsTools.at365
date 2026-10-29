@@ -5,7 +5,7 @@
   "displayName": "WindowsTools",
   "icon": "settings",
   "tagline": "毎日のWindows操作を、もっと軽やかに。",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "minimumHostVersion": "0.85.9",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
@@ -35,7 +35,7 @@
       "title": "無操作時の自動ロック",
       "type": "boolean",
       "default": false,
-      "description": "指定した時間、マウス・キーボードの操作がなかった場合に、Windowsをロックします。有効にした時点から無操作時間を数え直します。"
+      "description": "指定した時間、マウス・キーボードの操作がなかった場合に、Windowsをロックします。有効にした時点から無操作時間を数え直します。AppDockとWindowsToolsの起動中に動作します。[command:at365.windows-tools.toggle-auto-lock] からも有効／無効を切り替えられます。"
     },
     {
       "key": "autoLockMinutes",
@@ -52,7 +52,6 @@
     {
       "id": "display",
       "title": "コマンドの動作",
-      "description": "消灯予約は [command:at365.windows-tools.cancel-display-off] で取り消せます。",
       "settings": [
         "displayOffSeconds"
       ]
@@ -60,7 +59,6 @@
     {
       "id": "lock",
       "title": "セキュリティ",
-      "description": "AppDockとWindowsToolsの起動中に動作します。[command:at365.windows-tools.toggle-auto-lock] からも自動ロックの有効／無効を切り替えられます。",
       "settings": [
         "autoLockEnabled",
         "autoLockMinutes"
