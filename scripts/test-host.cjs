@@ -7,6 +7,7 @@ const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const root = path.resolve(__dirname, "..");
+const { prepareTestHost } = require('../../AppDock.at365/scripts/copy-host.cjs');
 const host = path.resolve(
   process.argv[2] || path.join(root, "../AppDock.at365"),
 );
@@ -76,7 +77,7 @@ settings.keybindings = [
     when: { scope: "global", appletIds: [] },
   },
 ];
-fs.writeFileSync(path.join(profile, "settings.json"), JSON.stringify(settings));
+fs.writeFileSync(require('../../AppDock.at365/scripts/test-settings.cjs').file(profile), JSON.stringify(settings));
 let child,
   browser,
   page,
@@ -104,10 +105,9 @@ async function state(page) {
       env = { ...process.env };
     delete env.ELECTRON_RUN_AS_NODE;
     const executable = packaged
-      ? path.join(profile, "AppDock.at365.exe")
+      ? prepareTestHost(packaged, profile, path.join(root, '.artifacts'))
       : require(path.join(host, "node_modules/electron"));
     if (packaged) {
-      fs.copyFileSync(packaged, executable);
       assert.equal(hash(executable), hash(packaged), "Fixed host EXE copy");
     }
     child = spawn(
