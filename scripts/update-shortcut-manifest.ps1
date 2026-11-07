@@ -43,7 +43,7 @@ $taskDocPath = Join-Path $taskRoot 'docs\windows-shortcuts.md'
 $taskDocLines = @(
     '# Windows標準コマンド一覧', '',
     ('WindowsToolsには、Windows標準のキー操作' + $taskCatalog.Count + '件と「Windowsをロックする」、ターミナル・電源関連の' + $taskProcesses.Count + '件が組み込まれています。既存のウィンドウ操作などと合わせて固定' + $taskCommands.Count + '件です。'), '',
-    'AppDockのコマンドパレットやショートカット・ジェスチャー・トレイの割り当てから選べます。送信先は実行時の最前面です。別のアプリを操作するときはグローバルショートカットなどから実行してください。', '',
+    'AppDockのコマンドパレットやショートカット・ジェスチャー・トレイの割り当てから選べます。キー送信の対象は実行時の最前面です。別のアプリを操作するときはグローバルショートカットなどから実行してください。', '',
     '固定コマンドは全件を共通操作API（MCPを含む）へ公開しています。ID・タイトル・説明を取得し、ショートカット等へ割り当てるほか、コマンドを直接実行できます。実行には呼び出し元のコマンド実行許可が必要です。キー送信・プロセス起動には、MCPとAppletの該当する操作許可も必要です。', '',
     'シャットダウン・再起動・サインアウト・ロック・消灯・ウィンドウの終了は作業や接続に影響します。撮影・録画・マイクのミュート切り替えは画面や音声の扱いに影響します。任意のコマンド文字列や送信キーを指定する機能は公開せず、各コマンドの固定操作だけを実行します。', '',
     'Windowsのバージョン、機器、インストール済みアプリ、設定によって利用できる操作が異なります。コマンドを用意するだけで、必要な機能の導入や設定の変更は行いません。キー送信の完了は、Windows側の動作を確認できたという意味ではありません。', '',
@@ -60,6 +60,12 @@ $taskDocLines += @('', '## ターミナル・電源関連', '',
     '| コマンド | 説明・利用条件 |', '| --- | --- |')
 foreach ($taskProcess in $taskProcesses) {
     $taskDocLines += '| ' + $taskProcess.title + ' | ' + $taskProcess.description + ' |'
+}
+$taskDocLines += @('', '## リモートデスクトップの最小化・復元', '',
+    '対象はmstsc.exeです。キートリガーでは、ScrollLockキーに割り当てて「元の入力をブロックする」を有効にしてください。', '',
+    '| コマンド | 説明 |', '| --- | --- |')
+foreach ($taskCommand in @($taskCommands | Where-Object { $_.id -like 'at365.windows-tools.rdp-*' })) {
+    $taskDocLines += '| ' + $taskCommand.title + ' | ' + $taskCommand.description + ' |'
 }
 $taskDocText = ($taskDocLines -join "`r`n") + "`r`n"
 if ($Check) {

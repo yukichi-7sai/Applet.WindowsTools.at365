@@ -12,7 +12,7 @@
 
 ## Windows標準コマンド
 
-[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。ウィンドウ操作など13件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは92件です。
+[設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。ウィンドウ操作など16件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは95件です。
 
 定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.180.0です。
 
@@ -65,13 +65,23 @@ NodeとPlaywrightはAppDock側の依存を使用します。第1引数にホス�
 
 ## 実装上の補足
 
-WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。9つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も92件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。全92件をmanifestのcommands[].automation=trueで共通操作API（MCPを含む）へ公開します。公開権限はmanifestを正本とし、runtime登録から権限を追加しません。
+### プロセス指定の最小化・復元
+
+`ProcessWindows`にプロセス名の正規化・設定の検証・対象ごとの操作判定を集約し、`NativeProcessWindows`がプロセス列挙とWin32への要求を担当する。`custom-commands` capabilityと`customCommandTypes`の宣言で本体の共通フォームを使い、activate時に`context.CustomCommands.RegisterAsync`へ登録する。既存の本体・SDK/Runtimeに変更はない。種類IDは`at365.windows-tools.process-window`、configVersionは1、保存項目は`processName`と`action`（`minimize`/`restore`/`toggle`）。保存先と安定したコマンドIDは[本体の契約](../AppDock.at365/docs/custom-commands-design.md)を使う。
+
+固定`rdp-minimize`/`rdp-restore`/`rdp-toggle`は`mstsc`を指定して同じ処理へ接続する。説明の正本はcommand-descriptions.json。対象のPIDとウィンドウの生存・表示状態を操作直前に再確認し、対象消滅時は最前面へ切り替えない。最小化したウィンドウを除外する既存の最前面用IsTargetとは分離する。取消を列挙前・各対象・送信前に確認し、非同期Win32要求の受付を実効果確認とみなさない。[ShowWindowAsync](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindowasync)で対象アプリの処理完了を待たずに要求し、新たな待機期限は設けない。
+
+標準回帰で混在状態・複数対象・対象なし・消滅・取消・設定更新・停止を検証する。`--process-window-smoke <本体ランナー> <発行DLL>`は試験プロセス自身のウィンドウだけを操作して最小化・復元・切り替え・元のサイズを確認する。実際のmstscセッションは操作しない。`scripts/test-host.cjs`は発行物と固定本体でフォーム作成・編集・保存・MCP公開/実行・Applet再起動後の保持を確認する。ScrollLockの実入力とリモート接続への転送挙動はこの自動試験に含めない。
+
+### 既存の最前面ウィンドウ操作
+
+WindowLayout/WindowMover/NativeWindowsはこのrepoで所有します。9つの固定ウィンドウコマンドを他の固定コマンドとともに毎回ReplaceAsyncへ渡し、設定更新後も95件を維持します。固定コマンドはmanifestにも宣言し、停止中も割り当て候補を表示します。全95件をmanifestのcommands[].automation=trueで共通操作API（MCPを含む）へ公開します。公開権限はmanifestを正本とし、runtime登録から権限を追加しません。
 
 Win32操作はApplet内で同期実行し、スレッドDPIコンテキストを同じスレッドで復元します。通常実行では最前面HWNDを1回取得し、ジェスチャーは既存の共通CommandExecution.Currentから開始HWND/プロセスを検証して固定します。取消を操作前と再配置前に検査します。WM_SYSCOMMANDによる閉じる/最小化/最大化/復元と移動計算は旧実装の動作を維持します。ウィンドウ操作の共通API契約は維持します。メディア・音量コマンドでは、本体とSDKの送信キー文法へ7キーを追加しています。
 
 ジェスチャーのprocessは本体が渡す拡張子なしのプロセス名として、HWNDの所有プロセス名と大文字小文字を区別せず照合します。従来の数値PIDを渡す呼出しも照合して受け付けます。不正なHWND・一致しない名前/PID・消滅した対象では操作せず、別の前面ウィンドウへ切り替えません。NativeSmokeは実際の本体と同じ名前形式で左右移動・高さ調整等を検証します。
 
-dynamic-commands capabilityは固定92件のReplaceAsyncに使用します。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
+dynamic-commands capabilityは固定95件のReplaceAsyncに使用します。無操作判定はGetLastInputInfo、ジェスチャーの対象は共通CommandExecutionを維持します。
 
 ## 公開設定
 
@@ -81,7 +91,7 @@ dynamic-commands capabilityは固定92件のReplaceAsyncに使用します。無
 
 GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みます。公開schema・読取り・更新、非公開項目/不正値の拒否、書込許可、dryRun、古いrevisionの拒否と、各Applet実プロセスへの反映を確認します。実利用Codex設定やモデルは使用しません。
 
-scripts/commands-mcp-check.cjsで全92件の公開・説明・割当候補を確認し、無効な試験用割当のdryRun/保存/取得/削除、既存割当保持と安全な消灯予約取消のMCP実行・実行許可の拒否を確認します。シャットダウン・再起動・サインアウト・ロックや撮影・録画等はこの試験で実行しません。
+scripts/commands-mcp-check.cjsで全95件の公開・説明・割当候補を確認し、無効な試験用割当のdryRun/保存/取得/削除、既存割当保持と安全な消灯予約取消のMCP実行・実行許可の拒否を確認します。シャットダウン・再起動・サインアウト・ロックや撮影・録画等はこの試験で実行しません。
 
 ## 設定画面の構成
 

@@ -8,7 +8,8 @@ internal static class NativeSmoke
 {
     private static readonly string[] Suffixes = new[] {"cancel-display-off", "center", "close", "display-off", "full-height", "left",
         "maximize", "minimize", "open-folder", "restore", "toggle-maximize", "right", "toggle-auto-lock", "lock-windows" }
-        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Concat(WindowsProcessCommands.All.Select(c => c.Id)).Order().ToArray();
+        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Concat(WindowsProcessCommands.All.Select(c => c.Id))
+        .Concat(ProcessWindows.RemoteDesktopCommands.Select(c => c.Suffix)).Order().ToArray();
     private static void CheckCommands(JsonElement contributions) {
         var commands = contributions.GetProperty("commands").EnumerateArray().ToArray();
         Require(commands.Select(c => c.GetProperty("id").GetString()).Order()
@@ -22,6 +23,9 @@ internal static class NativeSmoke
             using var peer = new Runner(runner, assembly);
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
+            Require(peer.CustomTypes.SequenceEqual(new[] { ProcessWindows.TypeId }), "custom type registered during activation");
+            peer.Request("customCommand.execute", new { typeId = ProcessWindows.TypeId,
+                config = new { processName = "appdock-missing-" + Guid.NewGuid(), action = "toggle" } });
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "tray registration");
             foreach (var shortcut in WindowsShortcuts.All) {
                 var registration = contributions.GetProperty("commands").EnumerateArray()
@@ -48,10 +52,41 @@ internal static class NativeSmoke
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 92 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine($"PASS published DLL: activation, {Suffixes.Length} commands and descriptions, process-window custom type and no-target execution, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+    }
+    // The selected process is this fixture itself; real mstsc sessions are never operated by tests.
+    public static int ProcessWindow(string runner, string assembly)
+    {
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        var previous = GetForegroundWindow();
+        try {
+            using var form = new Form { Text = "WindowsTools process-window fixture", Bounds = new Rectangle(140, 180, 500, 320) };
+            form.Show();
+            Application.DoEvents();
+            using var current = Process.GetCurrentProcess();
+            Require(current.MainWindowHandle == form.Handle, "fixture main window selected by process");
+            using var peer = new Runner(runner, assembly);
+            CheckCommands(peer.Request("activate", new { id = "at365.windows-tools", settings = new { } }));
+            var bounds = form.Bounds;
+            void Execute(string action, string? name = null) => peer.Request("customCommand.execute", new {
+                typeId = ProcessWindows.TypeId, executionId = Guid.NewGuid().ToString(),
+                config = new { processName = name ?? current.ProcessName + ".EXE", action }
+            });
+            Execute("minimize"); PumpUntil(() => form.WindowState == FormWindowState.Minimized);
+            Execute("restore"); PumpUntil(() => form.WindowState == FormWindowState.Normal);
+            Require(form.Bounds == bounds, "restore retains normal bounds");
+            Execute("toggle"); PumpUntil(() => form.WindowState == FormWindowState.Minimized);
+            Execute("toggle"); PumpUntil(() => form.WindowState == FormWindowState.Normal);
+            Execute("toggle", "appdock-missing-" + Guid.NewGuid());
+            Require(form.WindowState == FormWindowState.Normal && form.Bounds == bounds, "no-match leaves foreground fixture unchanged");
+            peer.Request("deactivate", new { }); peer.CloseInput();
+            Console.WriteLine("PASS published custom handler: native process lookup, optional EXE, minimize, restore, both toggle directions, original bounds and no-target no-op");
+            return 0;
+        } catch (Exception error) { Console.Error.WriteLine(error); return 1; }
+        finally { if (previous != 0) SetForegroundWindow(previous); }
     }
     // Uses only a disposable window owned by this test; never moves a user's window.
     public static int Run(string runner, string assembly, bool capturedTarget = false)
@@ -91,7 +126,7 @@ internal static class NativeSmoke
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "no tray registrations");
-            Console.WriteLine("PASS published DLL activation, 92 commands, no tray");
+            Console.WriteLine("PASS published DLL activation, 95 commands, no tray");
             var cursor = Cursor.Position;
             void Execute(string suffix, bool preservesForeground = true)
             {
@@ -219,6 +254,7 @@ internal static class NativeSmoke
         public string[] RegisteredIds { get; private set; } = [];
         public List<string> SentKeys { get; } = [];
         public List<JsonElement> ProcessRequests { get; } = [];
+        public List<string> CustomTypes { get; } = [];
         public Runner(string executable, string assembly)
         {
             var start = new ProcessStartInfo(executable) {
@@ -246,6 +282,8 @@ internal static class NativeSmoke
                 {
                     object? result = null;
                     switch (request.GetString()) {
+                        case "host.customCommands.register":
+                            CustomTypes.Add(message.GetProperty("params").GetProperty("typeId").GetString()!); break;
                         case "host.commands.replace":
                             RegisteredIds = message.GetProperty("params").GetProperty("commands").EnumerateArray()
                                 .Select(c => c.GetProperty("id").GetString()!).ToArray(); break;

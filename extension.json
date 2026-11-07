@@ -5,14 +5,77 @@
   "displayName": "WindowsTools",
   "icon": "settings",
   "tagline": "毎日のWindows操作を、もっと軽やかに。",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "minimumHostVersion": "0.180.0",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
   "type": "Applets.WindowsTools.WindowsToolsApplet",
-  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、Windows標準ショートカット、アプリのフォルダー表示、消灯予約、Windowsのロック、無操作時の自動ロック。",
-  "capabilities": ["settings", "dynamic-commands", "appdock-api"],
+  "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、プロセス指定とリモートデスクトップの最小化・復元、Windows標準ショートカット、アプリのフォルダー表示、消灯予約、Windowsのロック、無操作時の自動ロック。",
+  "capabilities": [
+    "settings",
+    "dynamic-commands",
+    "appdock-api",
+    "custom-commands"
+  ],
+  "customCommandTypes": [
+    {
+      "id": "at365.windows-tools.process-window",
+      "title": "ウィンドウの最小化・復元",
+      "description": "指定したプロセスのメインウィンドウを最小化・復元します。プロセス名はnotepadやmstsc.exeのように入力します。同名プロセスはすべて対象で、切り替えは各ウィンドウの状態ごとに行います。復元時は前面化も要求します。mstscを対象にする場合は、キートリガーでは、ScrollLockキーに割り当てて「元の入力をブロックする」を有効にしてください。",
+      "configVersion": 1,
+      "automation": true,
+      "configSchema": {
+        "type": "object",
+        "properties": {
+          "processName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "minimize",
+              "restore",
+              "toggle"
+            ]
+          }
+        },
+        "required": [
+          "processName",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "fields": [
+        {
+          "key": "processName",
+          "title": "対象プロセス",
+          "type": "string"
+        },
+        {
+          "key": "action",
+          "title": "操作",
+          "type": "select",
+          "default": "toggle",
+          "options": [
+            {
+              "value": "minimize",
+              "label": "最小化"
+            },
+            {
+              "value": "restore",
+              "label": "最小化から復元"
+            },
+            {
+              "value": "toggle",
+              "label": "最小化／復元"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "settings": [
     {
       "key": "displayOffSeconds",
@@ -47,15 +110,38 @@
     {
       "id": "display",
       "title": "コマンドの動作",
-      "settings": ["displayOffSeconds"]
+      "settings": [
+        "displayOffSeconds"
+      ]
     },
     {
       "id": "lock",
       "title": "セキュリティ",
-      "settings": ["autoLockEnabled", "autoLockMinutes"]
+      "settings": [
+        "autoLockEnabled",
+        "autoLockMinutes"
+      ]
     }
   ],
   "commands": [
+    {
+      "id": "at365.windows-tools.rdp-minimize",
+      "title": "リモートデスクトップを最小化",
+      "description": "リモートデスクトップ接続（mstsc.exe）の各メインウィンドウを最小化します。対象がなければ何もしません。キートリガーでは、ScrollLockキーに割り当てて「元の入力をブロックする」を有効にしてください。",
+      "automation": true
+    },
+    {
+      "id": "at365.windows-tools.rdp-restore",
+      "title": "リモートデスクトップを最小化から復元",
+      "description": "リモートデスクトップ接続（mstsc.exe）の各メインウィンドウを復元し、前面化も要求します。対象がなければ何もしません。キートリガーでは、ScrollLockキーに割り当てて「元の入力をブロックする」を有効にしてください。",
+      "automation": true
+    },
+    {
+      "id": "at365.windows-tools.rdp-toggle",
+      "title": "リモートデスクトップを最小化／復元",
+      "description": "リモートデスクトップ接続（mstsc.exe）の各メインウィンドウについて、最小化中なら復元、それ以外なら最小化します。復元時は前面化も要求します。対象がなければ何もしません。キートリガーでは、ScrollLockキーに割り当てて「元の入力をブロックする」を有効にしてください。",
+      "automation": true
+    },
     {
       "id": "at365.windows-tools.open-folder",
       "title": "最前面アプリの実行ファイルのフォルダーを開く",

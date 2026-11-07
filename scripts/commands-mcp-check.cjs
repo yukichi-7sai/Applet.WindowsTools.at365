@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-// Only cancel-display-off is executed. Every saved test binding is disabled.
+// Only cancel-display-off and a no-match process-window fixture are executed. Test bindings are disabled.
 module.exports = async function checkCommands({
   call,
   client,
@@ -12,7 +12,10 @@ module.exports = async function checkCommands({
   fixedCommands,
   profile,
 }) {
-  assert.equal(fixedCommands.length, 92);
+  for (const suffix of ['rdp-minimize', 'rdp-restore', 'rdp-toggle']) {
+    const command = fixedCommands.find(c => c.id === id + '.' + suffix);
+    assert(command, 'RDP command declared: ' + suffix);
+  }
   for (const expected of fixedCommands) {
     const actual = catalog.find((c) => c.id === expected.id);
     assert(actual?.available, expected.id);
@@ -21,9 +24,19 @@ module.exports = async function checkCommands({
   }
   assert.equal(
     catalog.filter((c) => fixedCommands.some((e) => e.id === c.id)).length,
-    92,
+    fixedCommands.length,
   );
   const details = await call("appdock_get_applet", { id });
+  const { type } = await call('appdock_get_custom_command_type', { typeId: id + '.process-window' });
+  assert.equal(type.available, true);
+  assert.equal(type.fields.find(f => f.key === 'action').options.length, 3);
+  const { items } = await call('appdock_list_custom_commands', { ownerId: id });
+  const processDefinition = items.find(item => item.typeId === type.id);
+  assert(processDefinition?.available && processDefinition.automation);
+  assert(catalog.some(command => command.id === processDefinition.commandId && command.available));
+  const outcome = await call('appdock_execute_command', { id: processDefinition.commandId });
+  assert.equal(outcome.completion, 'handlerReturned');
+  assert.equal(outcome.effectVerified, false);
   for (const expected of fixedCommands)
     assert.equal(
       details.commands.find((c) => c.id === expected.id)?.description,
@@ -119,7 +132,7 @@ module.exports = async function checkCommands({
         checks: [
           "list and Applet details include all descriptions",
           "all fixed commands assignable",
-          "all 92 disabled bindings validated, saved, read and removed",
+          "all 95 disabled bindings validated, saved, read and removed",
           "existing bindings preserved",
           "execution permission denied and safe cancellation executed",
           "unknown command rejected",

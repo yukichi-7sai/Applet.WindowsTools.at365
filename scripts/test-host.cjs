@@ -49,7 +49,7 @@ const processCatalog = JSON.parse(
 const manifestCommands = JSON.parse(
   fs.readFileSync(path.join(root, "extension.json"), "utf8"),
 ).commands;
-const fixedCount = 14 + catalog.length + processCatalog.length;
+const fixedCount = manifestCommands.length;
 const { overlayPage, closingAction } = require(
   path.join(host, "scripts/shell-overlay-helper.cjs"),
 );
@@ -393,6 +393,7 @@ async function state(page) {
       ),
       /利用できません/,
     );
+    const processWindow = await require("./process-window-ui-check.cjs")({ page, ui, profile, until });
     await require("./settings-mcp-check.cjs")({
       host,
       profile,
@@ -448,6 +449,8 @@ async function state(page) {
     );
     await checkWindowCommands();
     await checkStatic();
+    assert.equal((await snapshot(page)).settings.value.customCommands.items.find(item => item.id === processWindow.id).config.processName, processWindow.processName);
+    await page.evaluate(id => window.dock.executeCommand(id), 'appdock.custom.' + processWindow.id);
     await page.evaluate(
       (extension) => window.dock.toggleExtension(extension, false),
       id,
@@ -480,20 +483,23 @@ async function state(page) {
       1,
       "stale command rejection logged once",
     );
+    const invalidConfigMessage = "dock:settingsPage:act: configが種類のSchemaに一致しません。";
+    assert.equal(errors.filter(e => e.source === 'host' && e.message === invalidConfigMessage).length, 1,
+      'required process field rejected once without saving');
     assert.deepEqual(
       errors.filter(
         (e) =>
           !(
             e.source === "host" &&
-            e.message ===
-              "dock:executeCommand: このコマンドは現在利用できません。"
+            (e.message === invalidConfigMessage || e.message ===
+              "dock:executeCommand: このコマンドは現在利用できません。")
           ),
       ),
       [],
     );
     success = true;
     console.log(
-      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 92 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
+      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 95 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
     );
     console.log(profile);
   } finally {
@@ -524,13 +530,14 @@ async function state(page) {
           hostHash: packaged ? hash(packaged) : null,
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
-            "92 fixed commands with static descriptions and panel actions",
-            "all 92 fixed commands remain public after dynamic replacement, restart and stop",
+            "95 fixed commands with static descriptions",
+            "process-window custom form create/edit/save, required field validation, MCP publication/execution and restart persistence",
+            "all 95 fixed commands remain public after dynamic replacement, restart and stop",
             "native Windows shutdown dialog has a choice, OK and Cancel and closes by cancellation without shutdown",
             "Windows Terminal opens through the exact launch command; only the new terminal window is closed",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
-            "MCP command descriptions / all 92 shortcut assignments dryRun and persistence / safe execution and execution denial",
+            "MCP command descriptions / all 95 shortcut assignments dryRun and persistence / safe execution and execution denial",
             "countdown cancel / restart / stop",
           ],
         },

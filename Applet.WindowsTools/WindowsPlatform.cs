@@ -12,10 +12,13 @@ internal interface IWindowsPlatform
     void TurnOffDisplay();
     void Lock();
     void ExecuteWindow(MoveCommand command, CancellationToken token);
+    void ExecuteProcessWindow(string processName, ProcessWindowAction action, CancellationToken token);
 }
 
 internal sealed class WindowsPlatform : IWindowsPlatform
 {
+    public void ExecuteProcessWindow(string processName, ProcessWindowAction action, CancellationToken token) =>
+        new ProcessWindows(new NativeProcessWindows()).Execute(processName, action, token);
     public long Uptime => Environment.TickCount64;
     public uint LastInputTimestamp()
     {

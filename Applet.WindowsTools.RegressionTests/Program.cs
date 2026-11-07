@@ -5,19 +5,21 @@ using Applets.WindowsTools;
 
 internal static class Program
 {
-    private static int FixedCount => 14 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count;
+    private static int FixedCount => 14 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count + ProcessWindows.RemoteDesktopCommands.Length;
     [STAThread]
     private static int Main(string[] args)
     {
         if (args is ["--native-smoke", var runner, var assembly]) return NativeSmoke.Run(runner, assembly);
         if (args is ["--gesture-native-smoke", var gestureRunner, var gestureAssembly]) return NativeSmoke.Run(gestureRunner, gestureAssembly, capturedTarget: true);
         if (args is ["--protocol-smoke", var protocolRunner, var protocolAssembly]) return NativeSmoke.Protocol(protocolRunner, protocolAssembly);
+        if (args is ["--process-window-smoke", var processRunner, var processAssembly]) return NativeSmoke.ProcessWindow(processRunner, processAssembly);
         return Run().GetAwaiter().GetResult();
     }
     private static async Task<int> Run()
     {
         var tests = new List<(string, Func<Task>)>();
         WindowMovementTests.AddTo(tests);
+        ProcessWindowTests.AddTo(tests);
         void Test(string name, Action test) => tests.Add((name, () => { test(); return Task.CompletedTask; }));
         Test("shortcut grammar and virtual keys", () => {
             var chord = KeyChord.Parse("Ctrl+Shift+T");
@@ -104,7 +106,7 @@ internal static class Program
             Check(dialog.GetProperty("script").GetString() == "(New-Object -ComObject Shell.Application).ShutdownWindows()");
             Check(!dialog.GetProperty("showConsole").GetBoolean());
             await context.Change("displayOffSeconds", 15);
-            Check(context.Handlers.Count == 92 && context.Values.Count == 1 && context.SentKeys.Count == 0);
+            Check(context.Handlers.Count == FixedCount && context.Values.Count == 1 && context.SentKeys.Count == 0);
             context.ApiFailure = true;
             await ThrowsAsync(() => context.Execute("shutdown-windows"));
             Check(context.ProcessRequests.Count == 5);
@@ -127,6 +129,29 @@ internal static class Program
             var queued = context.Handlers[context.ExtensionId + ".lock-windows"];
             await ThrowsAsync(() => queued(cancellation.Token));
             await applet.DeactivateAsync(default); await queued(default); Check(platform.Locks == 1);
+        }));
+        tests.Add(("process-window custom type and fixed RDP commands share parameters, cancellation and lifecycle", async () => {
+            var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
+            await applet.ActivateAsync(context, default);
+            Check(context.CustomHandlers.Count == 1);
+            var custom = context.CustomHandlers[ProcessWindows.TypeId];
+            await custom(JsonSerializer.SerializeToElement(new { processName = " notepad.EXE ", action = "toggle" }), default);
+            Check(platform.ProcessWindows[^1] == ("notepad", ProcessWindowAction.Toggle));
+            foreach (var command in ProcessWindows.RemoteDesktopCommands) {
+                await context.Execute(command.Suffix);
+                Check(platform.ProcessWindows[^1] == ("mstsc", command.Action));
+            }
+            await context.Change("displayOffSeconds", 8);
+            Check(context.CustomHandlers.Count == 1 && context.Handlers.Count == FixedCount);
+            var config = JsonSerializer.SerializeToElement(new { processName = "mstsc", action = "restore" });
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            await ThrowsAsync(() => custom(config, cancellation.Token));
+            foreach (var command in ProcessWindows.RemoteDesktopCommands)
+                await ThrowsAsync(() => context.Handlers[context.ExtensionId + "." + command.Suffix](cancellation.Token));
+            await applet.DeactivateAsync(default);
+            await custom(config, default);
+            await context.Execute("rdp-toggle");
+            Check(platform.ProcessWindows.Count == 4 && context.Values.Count == 1 && context.ProcessRequests.Count == 0);
         }));
         Test("display waits until deadline, runs once", () => {
             var timer = new DisplayCountdown(); timer.Schedule(100, 5);
@@ -222,16 +247,25 @@ internal static class Program
         public uint Input;
         public int Offs, Locks, Folders;
         public List<MoveCommand> WindowCommands = [];
+        public List<(string, ProcessWindowAction)> ProcessWindows = [];
+        public void ExecuteProcessWindow(string processName, ProcessWindowAction action, CancellationToken token) {
+            token.ThrowIfCancellationRequested(); ProcessWindows.Add((processName, action));
+        }
         public uint LastInputTimestamp() => Input;
         public void OpenForegroundFolder() => Folders++;
         public void TurnOffDisplay() => Offs++;
         public void Lock() => Locks++;
         public void ExecuteWindow(MoveCommand command, CancellationToken token) { token.ThrowIfCancellationRequested(); WindowCommands.Add(command); }
     }
-    private sealed class FakeContext : IExtensionContext, ICommandService, ISettingsService, IUiService, ISchedulerService, IAppDockService
+    private sealed class FakeContext : IExtensionContext, ICommandService, ICustomCommandService, ISettingsService, IUiService, ISchedulerService, IAppDockService
     {
         public string ExtensionId => "at365.windows-tools";
         public Dictionary<string, Func<CancellationToken, Task>> Handlers = [];
+        public ICustomCommandService CustomCommands => this;
+        public Dictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement?>>> CustomHandlers = [];
+        public Task RegisterAsync(string typeId, Func<JsonElement, CancellationToken, Task<JsonElement?>> handler, CancellationToken token = default) {
+            CustomHandlers.Add(typeId, handler); return Task.CompletedTask;
+        }
         public Dictionary<string, string> Titles = [];
         public Dictionary<string, object> Values = [];
         public Dictionary<string, string?> Descriptions = [];

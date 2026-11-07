@@ -30,6 +30,16 @@ public sealed class WindowsToolsApplet : IAppDockExtension
     {
         this.context = context;
         active = true;
+        await context.CustomCommands.RegisterAsync(ProcessWindows.TypeId, async (config, ct) => {
+            var (name, action) = ProcessWindows.Parse(config);
+            await gate.WaitAsync(ct);
+            try {
+                ct.ThrowIfCancellationRequested();
+                if (active) platform.ExecuteProcessWindow(name, action, ct);
+                return null;
+            }
+            finally { gate.Release(); }
+        }, token);
         idle.Reset(platform.Uptime);
         await RefreshSettings(token);
         settingsSubscription = context.Settings.OnChanged(RefreshSettings);
@@ -65,6 +75,10 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             foreach (var shortcut in WindowsShortcuts.All)
                 commands.Add(Command(shortcut.Suffix, shortcut.Title,
                     ct => context.AppDock.CallAsync("input.sendKeys", new { keys = shortcut.Chord.ToShortcut() }, ct), shortcut.CommandDescription));
+            foreach (var command in ProcessWindows.RemoteDesktopCommands)
+                commands.Add(Command(command.Suffix, command.Title, ct => {
+                    platform.ExecuteProcessWindow("mstsc", command.Action, ct); return Task.CompletedTask;
+                }));
             foreach (var command in WindowsProcessCommands.All)
                 commands.Add(Command(command.Id, command.Title,
                     ct => context.AppDock.CallAsync("processes.start", command.CreateRequest(), ct), command.Description));
