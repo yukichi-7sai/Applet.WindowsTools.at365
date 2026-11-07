@@ -5,19 +5,14 @@
   "displayName": "WindowsTools",
   "icon": "settings",
   "tagline": "毎日のWindows操作を、もっと軽やかに。",
-  "version": "0.2.10",
-  "minimumHostVersion": "0.85.9",
+  "version": "0.3.0",
+  "minimumHostVersion": "0.180.0",
   "updateRepository": "yukichi-7sai/Applet.WindowsTools.at365",
   "runtime": "dotnet",
   "entry": "Applet.WindowsTools.at365.dll",
   "type": "Applets.WindowsTools.WindowsToolsApplet",
   "description": "ウィンドウの移動・高さ調整・最小化・最大化・復元・終了、Windows標準ショートカット、アプリのフォルダー表示、消灯予約、Windowsのロック、無操作時の自動ロック。",
-  "capabilities": [
-    "ui",
-    "settings",
-    "dynamic-commands",
-    "appdock-api"
-  ],
+  "capabilities": ["settings", "dynamic-commands", "appdock-api"],
   "settings": [
     {
       "key": "displayOffSeconds",
@@ -52,17 +47,12 @@
     {
       "id": "display",
       "title": "コマンドの動作",
-      "settings": [
-        "displayOffSeconds"
-      ]
+      "settings": ["displayOffSeconds"]
     },
     {
       "id": "lock",
       "title": "セキュリティ",
-      "settings": [
-        "autoLockEnabled",
-        "autoLockMinutes"
-      ]
+      "settings": ["autoLockEnabled", "autoLockMinutes"]
     }
   ],
   "commands": [

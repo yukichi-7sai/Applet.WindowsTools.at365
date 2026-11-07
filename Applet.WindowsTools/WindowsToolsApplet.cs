@@ -46,16 +46,16 @@ public sealed class WindowsToolsApplet : IAppDockExtension
                 Command("open-folder", "最前面アプリの実行ファイルのフォルダーを開く", ct => { platform.OpenForegroundFolder(); return Task.CompletedTask; }),
                 Command("lock-windows", "Windowsをロックする", ct => { platform.Lock(); return Task.CompletedTask; },
                     "Windowsを直ちにロックします。開いているアプリは終了しません。ロックの解除にはWindowsへのサインインが必要です。"),
-                Command("display-off", "ディスプレイの消灯を予約", async ct => {
-                    display.Schedule(platform.Uptime, displaySeconds); await ShowPanel(ct);
+                Command("display-off", "ディスプレイの消灯を予約", ct => {
+                    display.Schedule(platform.Uptime, displaySeconds); return Task.CompletedTask;
                 }),
-                Command("cancel-display-off", "ディスプレイの消灯予約を取り消す", async ct => {
-                    display.Cancel(); await ShowPanel(ct);
+                Command("cancel-display-off", "ディスプレイの消灯予約を取り消す", ct => {
+                    display.Cancel(); return Task.CompletedTask;
                 }),
                 Command("toggle-auto-lock", "無操作時の自動ロックを切り替える", async ct => {
                     var enabled = !autoLockEnabled;
                     await context.Settings.SetAsync("autoLockEnabled", enabled, ct);
-                    autoLockEnabled = enabled; idle.Reset(platform.Uptime); await ShowPanel(ct);
+                    autoLockEnabled = enabled; idle.Reset(platform.Uptime);
                 })
             };
             foreach (var command in WindowCommands)
@@ -75,7 +75,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             if (enabled != autoLockEnabled || minutes != lockMinutes) idle.Reset(platform.Uptime);
             autoLockEnabled = enabled;
             lockMinutes = minutes;
-            await ShowPanel(token);
+
         }
         finally { gate.Release(); }
     }
@@ -97,7 +97,7 @@ public sealed class WindowsToolsApplet : IAppDockExtension
             if (display.TakeDue(platform.Uptime))
             {
                 platform.TurnOffDisplay();
-                await ShowPanel(token);
+
             }
             token.ThrowIfCancellationRequested();
             if (autoLockEnabled && idle.TakeDue(platform.Uptime, platform.LastInputTimestamp(), lockMinutes))
@@ -105,19 +105,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
         }
         finally { gate.Release(); }
     }
-
-    private Task ShowPanel(CancellationToken token) => context.Ui.ShowPanelAsync(new Panel("WindowsTools",
-        "ウィンドウ操作・フォルダー表示は最前面アプリが対象です。ほかのアプリにはグローバルショートカットから実行してください。ウィンドウ操作をジェスチャーで実行すると開始時のウィンドウを操作します。",
-        [new("消灯", display.Due is null ? $"待機中（実行から{displaySeconds}秒後）" : "消灯を予約中（再実行で予約し直し）"),
-         new("自動ロック", autoLockEnabled ? $"{lockMinutes}分間、マウス・キーボードの操作がないとロック" : "無効"),
-         new("Windows標準コマンド", $"{WindowsShortcuts.All.Count}コマンド。ショートカット一覧・コマンドパレットから利用できます。対応条件は各コマンドの説明に表示します。"),
-         new("ウィンドウ移動", "左右は中央 → 端 → 隣のモニターの順に移動。高さはタスクバーを除く作業領域に合わせます。"),
-         new("ウィンドウ操作", "最小化・最大化・復元・閉じる。保存確認や終了のキャンセルは対象アプリに従います。")],
-        new PanelAction[] { new("フォルダーを開く", context.ExtensionId + ".open-folder"),
-         new("消灯を予約", context.ExtensionId + ".display-off"),
-         new("消灯予約を取り消す", context.ExtensionId + ".cancel-display-off"),
-         new("自動ロックを切り替える", context.ExtensionId + ".toggle-auto-lock") }
-        .Concat(WindowCommands.Select(command => new PanelAction(command.Title, context.ExtensionId + "." + command.Suffix))).ToArray()), token);
 
     public async Task DeactivateAsync(CancellationToken token)
     {

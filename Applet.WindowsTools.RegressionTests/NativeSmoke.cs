@@ -22,7 +22,7 @@ internal static class NativeSmoke
             using var peer = new Runner(runner, assembly);
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
-            Require(peer.PanelSeen && contributions.GetProperty("tray").GetArrayLength() == 0, "panel and tray registration");
+            Require(contributions.GetProperty("tray").GetArrayLength() == 0, "tray registration");
             foreach (var shortcut in WindowsShortcuts.All) {
                 var registration = contributions.GetProperty("commands").EnumerateArray()
                     .Single(c => c.GetProperty("id").GetString() == "at365.windows-tools." + shortcut.Suffix);
@@ -48,7 +48,7 @@ internal static class NativeSmoke
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine("PASS published DLL: activation, 92 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, panel, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine("PASS published DLL: activation, 92 commands and descriptions, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -91,8 +91,7 @@ internal static class NativeSmoke
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "no tray registrations");
-            Require(peer.PanelSeen, "panel registration");
-            Console.WriteLine("PASS published DLL activation, 92 commands, panel, no tray");
+            Console.WriteLine("PASS published DLL activation, 92 commands, no tray");
             var cursor = Cursor.Position;
             void Execute(string suffix, bool preservesForeground = true)
             {
@@ -217,7 +216,6 @@ internal static class NativeSmoke
         private readonly Process process;
         private readonly Task<string> errors;
         private int sequence;
-        public bool PanelSeen { get; private set; }
         public string[] RegisteredIds { get; private set; } = [];
         public List<string> SentKeys { get; } = [];
         public List<JsonElement> ProcessRequests { get; } = [];
@@ -248,7 +246,6 @@ internal static class NativeSmoke
                 {
                     object? result = null;
                     switch (request.GetString()) {
-                        case "host.ui.panel": PanelSeen = true; break;
                         case "host.commands.replace":
                             RegisteredIds = message.GetProperty("params").GetProperty("commands").EnumerateArray()
                                 .Select(c => c.GetProperty("id").GetString()!).ToArray(); break;

@@ -7,7 +7,9 @@ const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const root = path.resolve(__dirname, "..");
-const { prepareTestHost } = require('../../AppDock.at365/scripts/copy-host.cjs');
+const {
+  prepareTestHost,
+} = require("../../AppDock.at365/scripts/copy-host.cjs");
 const host = path.resolve(
   process.argv[2] || path.join(root, "../AppDock.at365"),
 );
@@ -38,11 +40,19 @@ for (const name of [
     path.join(folder, name),
   );
 const id = "at365.windows-tools";
-const catalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-shortcuts.json'), 'utf8'));
-const processCatalog = JSON.parse(fs.readFileSync(path.join(root, 'windows-process-commands.json'), 'utf8'));
-const manifestCommands = JSON.parse(fs.readFileSync(path.join(root, 'extension.json'), 'utf8')).commands;
+const catalog = JSON.parse(
+  fs.readFileSync(path.join(root, "windows-shortcuts.json"), "utf8"),
+);
+const processCatalog = JSON.parse(
+  fs.readFileSync(path.join(root, "windows-process-commands.json"), "utf8"),
+);
+const manifestCommands = JSON.parse(
+  fs.readFileSync(path.join(root, "extension.json"), "utf8"),
+).commands;
 const fixedCount = 14 + catalog.length + processCatalog.length;
-const { overlayPage, closingAction } = require(path.join(host, 'scripts/shell-overlay-helper.cjs'));
+const { overlayPage, closingAction } = require(
+  path.join(host, "scripts/shell-overlay-helper.cjs"),
+);
 const dynamicId = id + ".send.shortcut-1";
 const windowIds = [
   "left",
@@ -72,12 +82,15 @@ settings.keybindings = [
   {
     id: "test-dynamic-key",
     command: dynamicId,
-    key: "Ctrl+Alt+F19",
+    key: "Ctrl+Alt+Shift+8",
     enabled: true,
     when: { scope: "global", appletIds: [] },
   },
 ];
-fs.writeFileSync(require('../../AppDock.at365/scripts/test-settings.cjs').file(profile), JSON.stringify(settings));
+fs.writeFileSync(
+  require("../../AppDock.at365/scripts/test-settings.cjs").file(profile),
+  JSON.stringify(settings),
+);
 let child,
   browser,
   page,
@@ -105,7 +118,7 @@ async function state(page) {
       env = { ...process.env };
     delete env.ELECTRON_RUN_AS_NODE;
     const executable = packaged
-      ? prepareTestHost(packaged, profile, path.join(root, '.artifacts'))
+      ? prepareTestHost(packaged, profile, path.join(root, ".artifacts"))
       : require(path.join(host, "node_modules/electron"));
     if (packaged) {
       assert.equal(hash(executable), hash(packaged), "Fixed host EXE copy");
@@ -135,7 +148,10 @@ async function state(page) {
         .find((p) => p.url().startsWith("appdock://host/"));
       return page;
     }, "Host page missing");
-    await until(async () => (await snapshot(page)).startupReady, "Host startup incomplete");
+    await until(
+      async () => (await snapshot(page)).startupReady,
+      "Host startup incomplete",
+    );
     await until(
       async () =>
         (await state(page))?.commands.length === fixedCount &&
@@ -146,21 +162,31 @@ async function state(page) {
     const checkStatic = async () => {
       const current = await state(page);
       for (const entry of manifestCommands) {
-        const command = current.commands.find(c => c.id === entry.id);
+        const command = current.commands.find((c) => c.id === entry.id);
         assert.ok(entry.description?.trim(), entry.id);
         assert.equal(command?.description, entry.description, entry.id);
         assert.equal(command.automation, true, entry.id);
       }
       for (const entry of catalog) {
-        const id = 'at365.windows-tools.windows.' + entry.id;
-        const command = current.commands.find(c => c.id === id);
+        const id = "at365.windows-tools.windows." + entry.id;
+        const command = current.commands.find((c) => c.id === id);
         assert.equal(command?.title, entry.title, id);
-        assert.equal(command.description, `送信キー: ${entry.keys}。${entry.description}`, id);
+        assert.equal(
+          command.description,
+          `送信キー: ${entry.keys}。${entry.description}`,
+          id,
+        );
         assert.equal(command.automation, true);
       }
-      assert.ok(current.commands.some(c => c.id === 'at365.windows-tools.lock-windows'));
+      assert.ok(
+        current.commands.some(
+          (c) => c.id === "at365.windows-tools.lock-windows",
+        ),
+      );
       for (const entry of processCatalog) {
-        const command = current.commands.find(c => c.id === 'at365.windows-tools.' + entry.id);
+        const command = current.commands.find(
+          (c) => c.id === "at365.windows-tools." + entry.id,
+        );
         assert.equal(command?.title, entry.title);
         assert.equal(command.description, entry.description);
         assert.equal(command.automation, true);
@@ -168,51 +194,145 @@ async function state(page) {
     };
     await checkStatic();
     await page.evaluate(() => window.dock.setAppletApiPermissions({}));
-    await page.evaluate(() => window.dock.setAppletApiPermissions({ read: true, execute: true, runProcesses: true }));
-    const terminalProbe = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts/check-shutdown-dialog.ps1'), '-OutputDirectory', profile, '-Kind', 'terminal'], { windowsHide: true, stdio: 'pipe' });
-    let terminalOutput = '';
-    terminalProbe.stdout.on('data', data => { terminalOutput += data; });
-    terminalProbe.stderr.on('data', data => { terminalOutput += data; });
-    await until(() => fs.existsSync(path.join(profile, 'terminal-probe.ready')), 'Terminal probe ready');
-    await page.evaluate(() => window.dock.executeCommand('at365.windows-tools.launch-terminal'));
-    await until(() => terminalProbe.exitCode !== null, 'Terminal probe completed');
+    await page.evaluate(() =>
+      window.dock.setAppletApiPermissions({
+        read: true,
+        execute: true,
+        runProcesses: true,
+      }),
+    );
+    const terminalProbe = spawn(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        path.join(root, "scripts/check-shutdown-dialog.ps1"),
+        "-OutputDirectory",
+        profile,
+        "-Kind",
+        "terminal",
+      ],
+      { windowsHide: true, stdio: "pipe" },
+    );
+    let terminalOutput = "";
+    terminalProbe.stdout.on("data", (data) => {
+      terminalOutput += data;
+    });
+    terminalProbe.stderr.on("data", (data) => {
+      terminalOutput += data;
+    });
+    await until(
+      () => fs.existsSync(path.join(profile, "terminal-probe.ready")),
+      "Terminal probe ready",
+    );
+    await page.evaluate(() =>
+      window.dock.executeCommand("at365.windows-tools.launch-terminal"),
+    );
+    await until(
+      () => terminalProbe.exitCode !== null,
+      "Terminal probe completed",
+    );
     assert.equal(terminalProbe.exitCode, 0, terminalOutput);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(profile, 'terminal-window.json'), 'utf8').replace(/^\uFEFF/, '')).cancelled, true);
-    const probe = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts/check-shutdown-dialog.ps1'), '-OutputDirectory', profile], { windowsHide: true, stdio: 'pipe' });
-    let probeOutput = '';
-    probe.stdout.on('data', data => { probeOutput += data; });
-    probe.stderr.on('data', data => { probeOutput += data; });
-    await until(() => fs.existsSync(path.join(profile, 'dialog-probe.ready')), 'Shutdown dialog probe ready');
-    await page.evaluate(() => window.dock.executeCommand('at365.windows-tools.show-shutdown-dialog'));
-    await until(() => probe.exitCode !== null, 'Shutdown dialog probe completed');
+    assert.equal(
+      JSON.parse(
+        fs
+          .readFileSync(path.join(profile, "terminal-window.json"), "utf8")
+          .replace(/^\uFEFF/, ""),
+      ).cancelled,
+      true,
+    );
+    const probe = spawn(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        path.join(root, "scripts/check-shutdown-dialog.ps1"),
+        "-OutputDirectory",
+        profile,
+      ],
+      { windowsHide: true, stdio: "pipe" },
+    );
+    let probeOutput = "";
+    probe.stdout.on("data", (data) => {
+      probeOutput += data;
+    });
+    probe.stderr.on("data", (data) => {
+      probeOutput += data;
+    });
+    await until(
+      () => fs.existsSync(path.join(profile, "dialog-probe.ready")),
+      "Shutdown dialog probe ready",
+    );
+    await page.evaluate(() =>
+      window.dock.executeCommand("at365.windows-tools.show-shutdown-dialog"),
+    );
+    await until(
+      () => probe.exitCode !== null,
+      "Shutdown dialog probe completed",
+    );
     assert.equal(probe.exitCode, 0, probeOutput);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(profile, 'shutdown-dialog.json'), 'utf8').replace(/^\uFEFF/, '')).cancelled, true);
+    assert.equal(
+      JSON.parse(
+        fs
+          .readFileSync(path.join(profile, "shutdown-dialog.json"), "utf8")
+          .replace(/^\uFEFF/, ""),
+      ).cancelled,
+      true,
+    );
     await page.evaluate(() => window.dock.setAppletApiPermissions({}));
-    await page.evaluate(() => window.dock.executeCommand('appdock.commands.search'));
+    await page.evaluate(() =>
+      window.dock.executeCommand("appdock.commands.search"),
+    );
     const overlay = await overlayPage(page);
-    await overlay.getByRole('combobox').fill('最前面アプリの実行ファイル');
-    const folderRow = overlay.locator('[data-command-id="at365.windows-tools.open-folder"]');
-    await folderRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.open-folder').description, { exact: true }).waitFor();
+    await overlay.getByRole("combobox").fill("最前面アプリの実行ファイル");
+    const folderRow = overlay.locator(
+      '[data-command-id="at365.windows-tools.open-folder"]',
+    );
+    await folderRow
+      .getByText(
+        manifestCommands.find((c) => c.id === "at365.windows-tools.open-folder")
+          .description,
+        { exact: true },
+      )
+      .waitFor();
     await folderRow.scrollIntoViewIfNeeded();
-    await overlay.screenshot({ path: path.join(profile, 'added-description.png') });
-    await overlay.getByRole('combobox').fill('最大化／元に戻す');
-    const toggleRow = overlay.locator('[data-command-id="at365.windows-tools.toggle-maximize"]');
-    await toggleRow.getByText(manifestCommands.find(c => c.id === 'at365.windows-tools.toggle-maximize').description, { exact: true }).waitFor();
-    await overlay.screenshot({ path: path.join(profile, 'maximize-toggle.png') });
-    await overlay.getByRole('combobox').fill('最小システム要件');
-    await overlay.locator('[data-command-id="at365.windows-tools.windows.recall"]').getByText(/最小システム要件/).waitFor();
-    await overlay.screenshot({ path: path.join(profile, 'description-search.png') });
-    await closingAction(overlay.keyboard.press('Escape'));
+    await overlay.screenshot({
+      path: path.join(profile, "added-description.png"),
+    });
+    await overlay.getByRole("combobox").fill("最大化／元に戻す");
+    const toggleRow = overlay.locator(
+      '[data-command-id="at365.windows-tools.toggle-maximize"]',
+    );
+    await toggleRow
+      .getByText(
+        manifestCommands.find(
+          (c) => c.id === "at365.windows-tools.toggle-maximize",
+        ).description,
+        { exact: true },
+      )
+      .waitFor();
+    await overlay.screenshot({
+      path: path.join(profile, "maximize-toggle.png"),
+    });
+    await overlay.getByRole("combobox").fill("最小システム要件");
+    await overlay
+      .locator('[data-command-id="at365.windows-tools.windows.recall"]')
+      .getByText(/最小システム要件/)
+      .waitFor();
+    await overlay.screenshot({
+      path: path.join(profile, "description-search.png"),
+    });
+    await closingAction(overlay.keyboard.press("Escape"));
     const checkWindowCommands = async () => {
       const current = await state(page);
       for (const command of windowIds) {
         assert.ok(
           current.commands.some((c) => c.id === command),
           "Missing window command: " + command,
-        );
-        assert.ok(
-          current.panel.actions.some((a) => a.command === command),
-          "Missing panel action: " + command,
         );
       }
     };
@@ -222,7 +342,7 @@ async function state(page) {
     );
     const ui = await settingsPage(page);
     await ui
-      .getByRole("button", { name: "WindowsTools.at365", exact: false })
+      .getByRole("button", { name: "WindowsTools", exact: false })
       .first()
       .click();
     assert.equal(
@@ -278,20 +398,22 @@ async function state(page) {
       profile,
       page,
       id,
-      keys: ["displayOffSeconds"],
+      keys: ["displayOffSeconds", "autoLockEnabled", "autoLockMinutes"],
       changes: { displayOffSeconds: 1800 },
       invalid: [
         { displayOffSeconds: 0 },
         { displayOffSeconds: 3601 },
-        { displayOffSeconds: 1200, autoLockEnabled: true },
-        { autoLockMinutes: 1 },
+        { displayOffSeconds: 1200, autoLockEnabled: "invalid" },
+        { autoLockMinutes: "invalid" },
         { shortcuts: [] },
       ],
-      hidden: ["autoLockEnabled", "autoLockMinutes", "shortcuts"],
+      hidden: ["shortcuts"],
       fixedCommands: manifestCommands,
     });
     await until(
-      async () => (await state(page)).panel.facts[0].value.includes("1800秒"),
+      async () =>
+        (await snapshot(page)).settings.value.extensions[id].settings
+          .displayOffSeconds === 1800,
       "MCP setting did not reach runtime",
     );
     assert.equal(
@@ -308,12 +430,12 @@ async function state(page) {
       (command) => window.dock.executeCommand(command),
       id + ".display-off",
     );
-    assert.match((await state(page)).panel.facts[0].value, /予約中/);
+    assert.equal((await state(page)).state, "running");
     await page.evaluate(
       (command) => window.dock.executeCommand(command),
       id + ".cancel-display-off",
     );
-    assert.match((await state(page)).panel.facts[0].value, /待機中/);
+    assert.equal((await state(page)).state, "running");
     await page.evaluate(
       (extension) => window.dock.restartExtension(extension),
       id,

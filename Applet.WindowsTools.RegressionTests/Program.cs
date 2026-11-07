@@ -194,7 +194,6 @@ internal static class Program
             var commands = new[] { MoveCommand.Left, MoveCommand.Right, MoveCommand.FullHeight, MoveCommand.Center,
                 MoveCommand.Minimize, MoveCommand.Maximize, MoveCommand.Restore, MoveCommand.ToggleMaximize, MoveCommand.Close };
             await applet.ActivateAsync(context, default);
-            Check(context.LastPanel!.Actions!.Count == 13);
             foreach (var suffix in suffixes) await context.Execute(suffix);
             Check(platform.WindowCommands.SequenceEqual(commands));
             await context.Change("displayOffSeconds", 20);
@@ -249,7 +248,6 @@ internal static class Program
             return Task.FromResult(JsonSerializer.SerializeToElement(new { completion = method == "input.sendKeys" ? "inputSubmitted" : "processStarted", effectVerified = false }));
         }
         public Func<CancellationToken, Task>? Changed, Timer;
-        public AppDock.SDK.Panel? LastPanel;
         public ICommandService Commands => this;
         public ISettingsService Settings => this;
         public IUiService Ui => this;
@@ -268,7 +266,6 @@ internal static class Program
         public Task SetAsync<T>(string key, T value, CancellationToken token = default) { Values[key] = value!; return Task.CompletedTask; }
         public IDisposable OnChanged(Func<CancellationToken, Task> handler) { Changed = handler; return new Release(() => Changed = null); }
         public Task SetOptionsAsync(string key, IReadOnlyList<SettingOption> options, CancellationToken token = default) => throw new NotSupportedException();
-        public Task ShowPanelAsync(AppDock.SDK.Panel panel, CancellationToken token = default) { LastPanel = panel; return Task.CompletedTask; }
         public Task<string> GetImageDirectoryAsync(CancellationToken token = default) => throw new NotSupportedException();
         public IDisposable Every(TimeSpan interval, Func<CancellationToken, Task> callback) { Timer = callback; return new Release(() => Timer = null); }
         public Task Execute(string suffix) => Handlers[ExtensionId + "." + suffix](default);

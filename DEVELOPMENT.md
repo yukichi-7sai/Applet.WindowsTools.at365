@@ -14,7 +14,7 @@
 
 [設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。ウィンドウ操作など13件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは92件です。
 
-定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.85.9です。
+定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.180.0です。
 
 ## ビルド・配置
 
@@ -77,7 +77,7 @@ dynamic-commands capabilityは固定92件のReplaceAsyncに使用します。無
 
 固定コマンドのID・タイトル・説明はcommands.list/applets.getで取得でき、引数なしコマンドとしてショートカット等の割り当て候補になります。MCPからの直接実行も可能で、呼び出し元のコマンド実行許可、キー送信・プロセス起動ではMCPとApplet双方の該当許可を維持します。ID・実行処理・既定割り当て・設定の公開範囲は変更しません。公開宣言を変更したAppletの配置後はAppDockを再起動してください。基盤の公開/実行の分離やApplet単位の公開設定は今回追加していません。
 
-外部公開項目はextension.jsonのsettings[].automationで宣言します。取得とrevision付き更新は[共通操作API](../AppDock.at365/docs/automation.md)を使い、Applet固有のAPIや本体側の許可一覧は追加しません。booleanのON/OFF/toggleはgenerateCommandsで明示生成します。設定反映は既存Settings.OnChangedを共用します。
+外部公開は本体の共通設定APIの対応型・非公開指定に従い、displayOffSeconds/autoLockEnabled/autoLockMinutesを扱います。取得とrevision付き更新は[共通操作API](../AppDock.at365/docs/automation.md)を使い、Applet固有のAPIや本体側の許可一覧は追加しません。booleanのON/OFF/toggleはgenerateCommandsで明示生成します。設定反映は既存Settings.OnChangedを共用します。
 
 GUI試験にscripts/settings-mcp-check.cjsによる隔離MCP確認を含みます。公開schema・読取り・更新、非公開項目/不正値の拒否、書込許可、dryRun、古いrevisionの拒否と、各Applet実プロセスへの反映を確認します。実利用Codex設定やモデルは使用しません。
 
@@ -85,7 +85,7 @@ scripts/commands-mcp-check.cjsで全92件の公開・説明・割当候補を確
 
 ## 設定画面の構成
 
-`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.85.9です。
+`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.180.0です。
 
 カードは「コマンドの動作」「セキュリティ」とし、関連するコマンドを説明文の `[command:コマンドID]` で指定します。タグのリンク表示とパレットの初期選択は本体側の対応対象です。対応前の本体では説明文の文字列として表示し、Applet側に専用の解釈・描画・実行経路を持ちません。
 
@@ -98,3 +98,7 @@ scripts/commands-mcp-check.cjsで全92件の公開・説明・割当候補を確
 ## テストの共通実行場所
 
 GUI試験のAppDockは[共通実行場所](../AppDock.at365/docs/testing.md#固定配布物の共通実行場所)を使い、本repoの`.artifacts`をprofile保存rootとして明示します。既存の`--test-profile`等で設定・data・必要なextensionsと結果・ログを分離します。固定build出力を使う試験には追加コピーを作りません。
+
+## 現行の連携契約
+
+本体0.180.0以上とSDK/Runtime 0.34.0を基準にする。旧パネルへの状態送信は行わず、画面・設定・コマンド・ログは各機能の現行APIへ接続する。コマンドID・設定キー・保存値を保持する。旧パネルを前提としたテストは、実画面・公開コマンド・保存・停止の検証へ置き換える。
