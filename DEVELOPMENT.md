@@ -14,7 +14,7 @@
 
 [設計書](docs/windows-shortcuts-design.md)と[コマンド一覧](docs/windows-shortcuts.md)を参照してください。キー送信定義の正本はwindows-shortcuts.json、ターミナル・電源関連5件の正本はwindows-process-commands.jsonです。ウィンドウ操作など16件の説明はcommand-descriptions.jsonから実行時登録とmanifestへ共用します。DLLへの埋め込みとmanifest/一覧の生成を共用します。静的73件は本体のinput.sendKeysへ直接委譲し、専用ロックは既存のLockWorkStation経路を使用します。固定コマンドは95件です。
 
-定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.180.0です。
+定義を変更したらscripts/update-shortcut-manifest.ps1を実行し、-Checkで生成物を照合します。最低本体版は0.195.0です。
 
 ## ビルド・配置
 
@@ -95,7 +95,7 @@ scripts/commands-mcp-check.cjsで全95件の公開・説明・割当候補を確
 
 ## 設定画面の構成
 
-`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.180.0です。
+`extension.json`の`settingSections`で用途別のカードを宣言します。描画・余白・入力・検索・保存は[本体の共通テンプレート](../AppDock.at365/docs/extensions.md#共通の設定ページ)へ委譲し、Applet固有の設定フォームやCSSを複製しません。設定キー・既定値・実行処理を変えずに並び順を調整できます。最低本体版は0.195.0です。
 
 カードは「コマンドの動作」「セキュリティ」とし、関連するコマンドを説明文の `[command:コマンドID]` で指定します。タグのリンク表示とパレットの初期選択は本体側の対応対象です。対応前の本体では説明文の文字列として表示し、Applet側に専用の解釈・描画・実行経路を持ちません。
 
@@ -111,4 +111,4 @@ GUI試験のAppDockは[共通実行場所](../AppDock.at365/docs/testing.md#固�
 
 ## 現行の連携契約
 
-本体0.180.0以上とSDK/Runtime 0.34.0を基準にする。旧パネルへの状態送信は行わず、画面・設定・コマンド・ログは各機能の現行APIへ接続する。コマンドID・設定キー・保存値を保持する。旧パネルを前提としたテストは、実画面・公開コマンド・保存・停止の検証へ置き換える。
+本体0.195.0以上とSDK/Runtime 0.34.0を基準にする。旧パネルへの状態送信は行わず、画面・設定・コマンド・ログは各機能の現行APIへ接続する。コマンドID・設定キー・保存値を保持する。旧パネルを前提としたテストは、実画面・公開コマンド・保存・停止の検証へ置き換える。

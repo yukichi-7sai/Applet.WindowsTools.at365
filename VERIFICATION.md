@@ -1,5 +1,12 @@
 # 検証記録
 
+## 2026-11-09 管理者要求の宣言（0.5.0）
+
+- mainでpull --ff-only後、extension.jsonへrequestAdministrator=trueを追加し、最低本体版を0.195.0へ更新。本体の必要プロセス管理者起動がONならこのAppletを管理者起動し、OFFなら通常権限で動かす。コマンド/設定ID・実行処理は維持。最低本体版変更により0.4.0→0.5.0。
+- 発行前レビューで本体の宣言検証・プロセス選択とmanifest/csproj/使用説明の整合を確認。標準回帰51/51とupdate-shortcut-manifest.ps1 -Check（73ショートカット/95固定コマンド）成功。`.artifacts/elevation-regression.log`、`.artifacts/elevation-package-build.log`に記録。
+- `.artifacts/elevation-package`と発行済みDLLのSHA256一致を確認。固定本体0.195.0でOFF時の通常起動、ON時の管理者起動、追加UACなしの通常再起動、管理者の試験用ウィンドウに対する実移動、OFF後の通常実行に成功。本体の`.artifacts/elevation-20261109/published-elevated-ui.log`と`.artifacts/elevated-processes-ui-1794182281266/result.json`に記録。操作コードは未変更のため標準51件を再利用し、宣言/起動の差は発行後の実機試験で確認した。
+- publish.bat成功。`A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365`とupdate.zip/update.jsonを0.5.0/最低本体0.195.0で発行。ZIP 33,302 bytes、SHA256 `c643b31607c248ce8fb03dc95f05b0ff34c307cce5fa79162beda111cc5de296`。配布manifestの要求、DLL版、feedのsize/hash、ZIPの3ファイルと発行フォルダーの一致を確認。実RDP/secure desktopは対象外。実利用先deploy・push・Releaseは行っていない。
+
 ## 2026-11-08 プロセス指定・リモートデスクトップの最小化と復元（0.4.0）
 
 - main/origin/main・cleanを確認し、`pull --ff-only`はAlready up to date。WindowsToolsだけに`at365.windows-tools.process-window`種類（processName/action）、共通フォームの宣言、固定`rdp-minimize`/`rdp-restore`/`rdp-toggle`を追加した。固定95件、既存IDと設定3件、最低本体0.180.0を維持。本体とSDK/Runtimeの製品変更はない。capability・公開種類の追加により0.3.0→0.4.0へminor更新した。
