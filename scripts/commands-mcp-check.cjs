@@ -132,7 +132,7 @@ module.exports = async function checkCommands({
         checks: [
           "list and Applet details include all descriptions",
           "all fixed commands assignable",
-          "all 95 disabled bindings validated, saved, read and removed",
+          "all native-command disabled bindings validated, saved, read and removed",
           "existing bindings preserved",
           "execution permission denied and safe cancellation executed",
           "unknown command rejected",

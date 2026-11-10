@@ -5,7 +5,7 @@ using Applets.WindowsTools;
 
 internal static class Program
 {
-    private static int FixedCount => 14 + WindowsShortcuts.All.Count + WindowsProcessCommands.All.Count + ProcessWindows.RemoteDesktopCommands.Length;
+    private static int FixedCount => 14 + WindowsProcessCommands.All.Count + ProcessWindows.RemoteDesktopCommands.Length;
     [STAThread]
     private static int Main(string[] args)
     {
@@ -54,31 +54,22 @@ internal static class Program
             Throws(() => semicolon.ResolveSymbol(0x8ba));
             Throws(() => KeyChord.Parse("Ctrl+Win"));
         });
-        tests.Add(("static catalog covers both source sections, preserves descriptions and ignores removed custom settings", async () => {
-            var context = new FakeContext(); var platform = new FakePlatform(); var applet = new WindowsToolsApplet(platform);
+        tests.Add(("native catalog preserves descriptions and never registers retired key commands", async () => {
+            var context = new FakeContext(); var applet = new WindowsToolsApplet(new FakePlatform());
             await applet.ActivateAsync(context, default);
             Check(context.Descriptions.Count == FixedCount && context.Descriptions.Values.All(value => !string.IsNullOrWhiteSpace(value)));
             foreach (var description in CommandDescriptions.All)
                 Check(context.Descriptions[context.ExtensionId + "." + description.Key] == description.Value);
-            var expected = "Win Win+A Win+Shift+A Win+Alt+B Win+C Win+Alt+D Win+Alt+Down Win+Alt+H Win+Alt+K Win+Alt+Up Win+Ctrl+C Win+Ctrl+Enter Win+Ctrl+F Win+Ctrl+Q Win+Ctrl+Space Win+Ctrl+V Win+D Win+Down Win+E Win+Escape Win+F Win+Slash Win+G Win+H Win+Home Win+I Win+J Win+K Win+Left Win+M Win+Minus Win+N Win+O Win+P Win+Pause Win+Period Win+Semicolon Win+Plus Win+PrintScreen Win+Q Win+R Win+Right Win+S Win+Shift+Down Win+Shift+Enter Win+Shift+Left Win+Shift+M Win+Shift+R Win+Shift+Right Win+Shift+S Win+Shift+Space Win+Shift+Up Win+Shift+V Win+Space Win+Tab Win+U Win+Up Win+V Win+W Win+X Win+Y Win+Z Win+Ctrl+D Win+Ctrl+Right Win+Ctrl+Left Win+Ctrl+F4".Split(' ');
-            expected = expected.Concat(new[] { "MediaPlayPause", "MediaStop", "MediaNextTrack", "MediaPrevTrack", "VolumeMute", "VolumeUp", "VolumeDown" }).ToArray();
-            Check(WindowsShortcuts.All.Select(s => s.Keys).Order().SequenceEqual(expected.Order()));
-            Check(WindowsShortcuts.All.Select(s => s.Id).Distinct().Count() == expected.Length);
-            foreach (var shortcut in WindowsShortcuts.All) {
-                Check(context.Descriptions[context.ExtensionId + "." + shortcut.Suffix] == shortcut.CommandDescription);
-                await context.Execute(shortcut.Suffix);
-                Check(context.SentKeys[^1] == shortcut.Keys);
-            }
-            Check(context.SentKeys.Count == expected.Length);
-            var fixedIds = context.Handlers.Keys.ToHashSet();
+            Check(context.Handlers.Keys.All(id => !id.StartsWith(context.ExtensionId + ".windows.")));
+            var original = context.Handlers.Keys.ToHashSet();
             await context.Change("shortcuts", new[] { new { id = "obsolete", title = "Old", keys = "invalid" } });
-            Check(context.Handlers.Count == FixedCount && context.Handlers.Keys.ToHashSet().SetEquals(fixedIds));
-            Check(context.Handlers.Keys.All(id => !id.Contains(".send.")));
-            var queued = context.Handlers[context.ExtensionId + ".windows.explorer"];
+            Check(context.Handlers.Count == FixedCount && context.Handlers.Keys.ToHashSet().SetEquals(original));
+            Check(context.SentKeys.Count == 0);
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-            await ThrowsAsync(() => context.Handlers[context.ExtensionId + ".windows.explorer"](cancellation.Token));
+            var queued = context.Handlers[context.ExtensionId + ".minimize"];
+            await ThrowsAsync(() => queued(cancellation.Token));
             await applet.DeactivateAsync(default); await queued(default);
-            Check(context.SentKeys.Count == expected.Length);
+            Check(context.SentKeys.Count == 0);
         }));
         tests.Add(("terminal and power commands delegate fixed requests, preserve settings and obey cancellation", async () => {
             var context = new FakeContext(); var applet = new WindowsToolsApplet(new FakePlatform());

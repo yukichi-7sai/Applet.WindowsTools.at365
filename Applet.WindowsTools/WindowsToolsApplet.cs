@@ -72,9 +72,6 @@ public sealed class WindowsToolsApplet : IAppDockExtension
                 commands.Add(Command(command.Suffix, command.Title, ct => {
                     platform.ExecuteWindow(command.Command, ct); return Task.CompletedTask;
                 }));
-            foreach (var shortcut in WindowsShortcuts.All)
-                commands.Add(Command(shortcut.Suffix, shortcut.Title,
-                    ct => context.AppDock.CallAsync("input.sendKeys", new { keys = shortcut.Chord.ToShortcut() }, ct), shortcut.CommandDescription));
             foreach (var command in ProcessWindows.RemoteDesktopCommands)
                 commands.Add(Command(command.Suffix, command.Title, ct => {
                     platform.ExecuteProcessWindow("mstsc", command.Action, ct); return Task.CompletedTask;

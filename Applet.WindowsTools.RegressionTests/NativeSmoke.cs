@@ -8,7 +8,7 @@ internal static class NativeSmoke
 {
     private static readonly string[] Suffixes = new[] {"cancel-display-off", "center", "close", "display-off", "full-height", "left",
         "maximize", "minimize", "open-folder", "restore", "toggle-maximize", "right", "toggle-auto-lock", "lock-windows" }
-        .Concat(WindowsShortcuts.All.Select(s => s.Suffix)).Concat(WindowsProcessCommands.All.Select(c => c.Id))
+        .Concat(WindowsProcessCommands.All.Select(c => c.Id))
         .Concat(ProcessWindows.RemoteDesktopCommands.Select(c => c.Suffix)).Order().ToArray();
     private static void CheckCommands(JsonElement contributions) {
         var commands = contributions.GetProperty("commands").EnumerateArray().ToArray();
@@ -27,14 +27,9 @@ internal static class NativeSmoke
             peer.Request("customCommand.execute", new { typeId = ProcessWindows.TypeId,
                 config = new { processName = "appdock-missing-" + Guid.NewGuid(), action = "toggle" } });
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "tray registration");
-            foreach (var shortcut in WindowsShortcuts.All) {
-                var registration = contributions.GetProperty("commands").EnumerateArray()
-                    .Single(c => c.GetProperty("id").GetString() == "at365.windows-tools." + shortcut.Suffix);
-                Require(registration.GetProperty("description").GetString() == shortcut.CommandDescription, "static command description");
-                peer.Request("command.execute", new { id = "at365.windows-tools." + shortcut.Suffix });
-                Require(peer.SentKeys[^1] == shortcut.Keys, "static key delegation");
-            }
-            Require(peer.SentKeys.Count == WindowsShortcuts.All.Count, "one API call per static command");
+            Require(peer.SentKeys.Count == 0, "native catalog does not delegate key sending");
+            Require(!contributions.GetProperty("commands").EnumerateArray()
+                .Any(command => command.GetProperty("id").GetString()!.StartsWith("at365.windows-tools.windows.")), "key command catalog retired");
             foreach (var command in WindowsProcessCommands.All) {
                 var registration = contributions.GetProperty("commands").EnumerateArray()
                     .Single(c => c.GetProperty("id").GetString() == "at365.windows-tools." + command.Id);
@@ -52,7 +47,7 @@ internal static class NativeSmoke
             using var eof = new Runner(runner, assembly);
             eof.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             eof.CloseInput();
-            Console.WriteLine($"PASS published DLL: activation, {Suffixes.Length} commands and descriptions, process-window custom type and no-target execution, 73 input and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, no tray, deactivate, restart, EOF shutdown");
+            Console.WriteLine($"PASS published DLL: activation, {Suffixes.Length} commands and descriptions, process-window custom type and no-target execution, no key delegation and 5 process delegations through simulated host API, obsolete key setting ignored, settings replacement, no tray, deactivate, restart, EOF shutdown");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -126,7 +121,7 @@ internal static class NativeSmoke
             var contributions = peer.Request("activate", new { id = "at365.windows-tools", settings = new { } });
             CheckCommands(contributions);
             Require(contributions.GetProperty("tray").GetArrayLength() == 0, "no tray registrations");
-            Console.WriteLine("PASS published DLL activation, 95 commands, no tray");
+            Console.WriteLine("PASS published DLL activation, 22 commands, no tray");
             var cursor = Cursor.Position;
             void Execute(string suffix, bool preservesForeground = true)
             {

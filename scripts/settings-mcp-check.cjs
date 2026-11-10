@@ -153,9 +153,9 @@ module.exports = async function checkSettings({
         assert.equal((await get()).values[key], expected);
       }
     }
-    const snapshot = await page.evaluate(() => window.dock.snapshot());
+    const { readLogs } = hostRequire('./scripts/test-logs.cjs');
     assert(
-      snapshot.logs.some(
+      readLogs(profile).some(
         (l) => l.source === "automation" && l.message.includes(update.id),
       ),
     );

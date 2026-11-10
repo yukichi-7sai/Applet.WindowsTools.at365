@@ -6,6 +6,7 @@ const path = require("node:path");
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
+const { readLogs } = require('../../AppDock.at365/scripts/test-logs.cjs');
 const root = path.resolve(__dirname, "..");
 const {
   prepareTestHost,
@@ -40,9 +41,6 @@ for (const name of [
     path.join(folder, name),
   );
 const id = "at365.windows-tools";
-const catalog = JSON.parse(
-  fs.readFileSync(path.join(root, "windows-shortcuts.json"), "utf8"),
-);
 const processCatalog = JSON.parse(
   fs.readFileSync(path.join(root, "windows-process-commands.json"), "utf8"),
 );
@@ -66,6 +64,9 @@ const windowIds = [
   "close",
 ].map((s) => id + "." + s);
 const settings = createDefaultSettings();
+settings.updates.checkHostOnAboutOpen = false;
+settings.updates.checkHostOnStartup = false;
+settings.updates.checkAppletsOnStartup = false;
 settings.host.notifications = false;
 const oldKeys = [
   { id: "shortcut-1", title: "Obsolete saved key", keys: "Ctrl+A" },
@@ -167,17 +168,7 @@ async function state(page) {
         assert.equal(command?.description, entry.description, entry.id);
         assert.equal(command.automation, true, entry.id);
       }
-      for (const entry of catalog) {
-        const id = "at365.windows-tools.windows." + entry.id;
-        const command = current.commands.find((c) => c.id === id);
-        assert.equal(command?.title, entry.title, id);
-        assert.equal(
-          command.description,
-          `送信キー: ${entry.keys}。${entry.description}`,
-          id,
-        );
-        assert.equal(command.automation, true);
-      }
+      assert(!current.commands.some(command => command.id.startsWith("at365.windows-tools.windows.")));
       assert.ok(
         current.commands.some(
           (c) => c.id === "at365.windows-tools.lock-windows",
@@ -318,14 +309,9 @@ async function state(page) {
     await overlay.screenshot({
       path: path.join(profile, "maximize-toggle.png"),
     });
-    await overlay.getByRole("combobox").fill("最小システム要件");
-    await overlay
-      .locator('[data-command-id="at365.windows-tools.windows.recall"]')
-      .getByText(/最小システム要件/)
-      .waitFor();
-    await overlay.screenshot({
-      path: path.join(profile, "description-search.png"),
-    });
+    await overlay.getByRole("combobox").fill("Windowsをロックする");
+    await overlay.locator('[data-command-id="at365.windows-tools.lock-windows"]').getByText(/Windowsを直ちにロックします/).waitFor();
+    await overlay.screenshot({ path: path.join(profile, "description-search.png") });
     await closingAction(overlay.keyboard.press("Escape"));
     const checkWindowCommands = async () => {
       const current = await state(page);
@@ -470,7 +456,7 @@ async function state(page) {
       "Stopped commands unavailable",
     );
     assert.ok(stopped.commands.every((command) => command.automation === true));
-    const errors = (await snapshot(page)).logs.filter(
+    const errors = readLogs(profile).filter(
       (entry) => entry.level === "error",
     );
     assert.equal(
@@ -499,7 +485,7 @@ async function state(page) {
     );
     success = true;
     console.log(
-      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 95 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
+      "PASS removed key settings and commands, retained obsolete settings/bindings without migration, 22 fixed commands with static descriptions, rejected stale command, countdown/cancel, restart, deactivate",
     );
     console.log(profile);
   } finally {
@@ -530,14 +516,14 @@ async function state(page) {
           hostHash: packaged ? hash(packaged) : null,
           appletHash: hash(path.join(folder, "Applet.WindowsTools.at365.dll")),
           checks: [
-            "95 fixed commands with static descriptions",
+            "22 fixed commands with static descriptions",
             "process-window custom form create/edit/save, required field validation, MCP publication/execution and restart persistence",
-            "all 95 fixed commands remain public after dynamic replacement, restart and stop",
+            "all 22 fixed commands remain public after dynamic replacement, restart and stop",
             "native Windows shutdown dialog has a choice, OK and Cancel and closes by cancellation without shutdown",
             "Windows Terminal opens through the exact launch command; only the new terminal window is closed",
             "key UI and send commands removed; obsolete settings and bindings preserved without migration",
             "MCP display countdown / exclusions / permissions / dryRun / conflicts / validation / runtime",
-            "MCP command descriptions / all 95 shortcut assignments dryRun and persistence / safe execution and execution denial",
+            "MCP command descriptions / all 22 shortcut assignments dryRun and persistence / safe execution and execution denial",
             "countdown cancel / restart / stop",
           ],
         },
