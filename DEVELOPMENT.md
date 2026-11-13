@@ -4,7 +4,7 @@
 
 ## 発行先
 
-標準発行先は `A:\40.ARTIFACT\Applet.WindowsTools.at365` です。`publish.bat`はソースrepoから実行します。詳細は[共通発行手順](../AppDock.at365/docs/publishing.md)を参照してください。
+標準発行先は `.artifacts/publish` です。`publish.bat`はソースrepoから実行します。詳細は[共通発行手順](../AppDock.at365/docs/publishing.md)を参照してください。
 
 実装時のテスト選択、コミット前の必要回帰、リリース前のコミット/プッシュ確認と検証証跡の再利用は、[本体・Applet共通手順](../AppDock.at365/docs/development-workflow.md)に従います。この文書の試験コマンドは、その段階に応じて実行します。
 
@@ -28,11 +28,11 @@ dotnet build .\Applet.WindowsTools.at365.slnx -c Release
 別の配置場所にあるAppDockのSDKを使う場合:
 
 ```powershell
-.\publish.bat -AppDockRoot "A:\30.PROJECT\AppDock.at365"
+.\publish.bat -AppDockRoot "..\AppDock.at365"
 # ソリューション全体のビルド時は -p:AppDockRoot=... を指定
 ```
 
-発行先は `A:/40.ARTIFACT/Applet.WindowsTools.at365/Applet.WindowsTools.at365/` です。`-OutputDirectory` で変更できます。
+発行先は `.artifacts/publish/Applet.WindowsTools.at365/` です。`-OutputDirectory` で変更できます。
 
 実利用先へ配置する場合はAppDockを完全終了し、発行したDLL・deps.json・manifestを`extensions/Applet.WindowsTools.at365`へコピーします。AppDock.SDKはホストが供給します。
 
@@ -49,8 +49,8 @@ dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release
 発行済みDLLの登録・設定更新・停止と、専用WinFormsウィンドウの実移動を確認できます。
 
 ```powershell
-dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --protocol-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" "A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
-dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --native-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" "A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --protocol-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".artifacts/publish/Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
+dotnet run --project .\Applet.WindowsTools.RegressionTests -c Release -- --native-smoke "..\AppDock.at365\.artifacts\dotnet-host\AppDock.ExtensionHost.exe" ".artifacts/publish/Applet.WindowsTools.at365\Applet.WindowsTools.at365.dll"
 ```
 
 実移動試験は試験専用ウィンドウだけを操作し、移動・高さ・中央・最大化/復元・最小化・取消可能な通常終了、ジェスチャーの対象固定と元の前面/カーソル保持を確認します。終了時は元のフォーカスへ戻します。GUI試験は直列で実行してください。

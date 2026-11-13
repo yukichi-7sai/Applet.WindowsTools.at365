@@ -1,5 +1,19 @@
 # 検証記録
 
+## 2026-11-14 コミット前の照合
+
+- 実装完了時に記録した134入力ファイルのSHA256が一致し、別作業の変更と既存stageがないことを確認。
+- 本repoは文書・Git除外・設定例だけの変更。リンクとdiff検査を再確認し、製品回帰・再発行は不要。
+- 発行済み8 ZIPのSHA256も一致し、検証済み配布物を維持。ローカル設定はGit管理外。照合後の変更は本検証記録の追記だけで、製品の追加修正・版更新・再発行なし。
+- 判定・成功ログ・stage/commit treeの照合記録は`.artifacts/commit-validation-publish-paths-20261114/`へ保存。コミットは対象ファイルに限定し、push・Release・実利用先配置は行わない。
+
+## 2026-11-14 発行先のローカル設定と公開記録の整理
+
+- 環境固有の出力先をGit管理外`publish.local.json`へ分離。相対値は設定ファイル基準、未設定時は各repo内`.artifacts/publish`。worktree専用の出力名と既存の明示出力先指定を維持。
+- 公開するコード・文書・検証記録から環境固有の出力名を除去。以前の記録は論理パスへ置換し、元の記録を各repoの`.artifacts/publish-paths-private-20261114/original/`へ保存。Git履歴は変更していない。
+- 本repoの変更は公開文書・検証記録・ローカル設定のGit除外。製品コード・版・配布内容の変更はなく、再発行/製品回帰は不要。共有発行先ヘルパーは本体の5項目で検証し、参照リンクとdiff検査を確認。
+
+
 ## 2026-11-10 キー送信を本体へ分離（0.6.0）
 
 - cleanなmain `bb8f4d7`から開始し、`git pull --ff-only`は更新なし。固定キー送信73件とその埋め込み定義・登録クラスを本体の`configs/command-sets/windows.json`へ移し、このAppletはウィンドウ・消灯・ロック・プロセス操作の固定22件とプロセス指定のカスタム種類を提供する。残るID・説明・処理・設定・管理者要求を維持した。設定・旧ID・割り当ての移行や別名は追加しない。
@@ -7,7 +21,7 @@
 - `update-shortcut-manifest.ps1 -Check`、Release build、.NET回帰 **51/51**成功。SDKキー文法4件の既存検査も保持し、ネイティブ登録と旧キーIDの非登録・設定変更・取消・停止を確認した。発行済みDLLを実ExtensionHostから起動し、22件の説明、プロセスAPI委譲、カスタム種類、再起動・EOF終了を確認。所有WinForms Windowで左右移動・全高・最大化・復元・最小化・終了と対象固定・取消を検証した。
 - 本体0.209.0固定EXEとのGUI/MCP **9群成功**（`.artifacts/host-1794300099910`）。全22件の公開と無効な割り当てのdryRun/保存/取得/削除、カスタムプロセス種類、説明検索、設定・起動待ち・安全な消灯予約取消、再起動・停止を確認。Windows終了画面はキャンセルし、ターミナルは新規に開いたWindowだけ閉じた。実ロック・消灯・シャットダウン・サインアウトは行っていない。
 - 初回.NET検査はNativeSmokeの旧WindowsShortcuts参照でコンパイル失敗し、移行したキーの検査を本体へ分けて再成功。初回GUIは廃止されたsnapshot.logsへの依存で失敗し、本体の共通test-logs.cjsへ接続して同じログ確認を維持し再成功（失敗profile `.artifacts/host-1794299874679`）。入力文法の既存検査は削除せず保持した。ログfixtureの修正は製品DLLを変えないため再発行しない。
-- `publish.bat`終了0、発行先は**`A:\40.ARTIFACT\Applet.WindowsTools.at365`**。manifest/feed/DLLは0.6.0、最低本体版0.209.0。発行先と更新ZIPの**3ファイル**のSHA256一致、manifestはソースとも一致。DLL **`5024BDE76715EE69F14300F61A86B9ED3E56BD65AD657E0B505D25482293D96E`**、update.zip **24483 bytes / `C6F82021B92C50C39685CB03005E1980F4C7E769E3C2C5E5F0C98FC8101577D2`**。
+- `publish.bat`終了0、発行先は**`<PUBLISH_ROOT>\Applet.WindowsTools.at365`**。manifest/feed/DLLは0.6.0、最低本体版0.209.0。発行先と更新ZIPの**3ファイル**のSHA256一致、manifestはソースとも一致。DLL **`5024BDE76715EE69F14300F61A86B9ED3E56BD65AD657E0B505D25482293D96E`**、update.zip **24483 bytes / `C6F82021B92C50C39685CB03005E1980F4C7E769E3C2C5E5F0C98FC8101577D2`**。
 - 証跡は`.artifacts/key-migration-20261110/`の29入力hash・review・完全ログ・発行照合と、本体の`.artifacts/command-set-migration-20261110/`。共用テストEXEを使い、本repoで専用ランタイム複製は作っていない。成功分は方式別の直近3回以内、失敗と参照記録は保持。本体の5 Appletスターターfixtureでも本版の起動・終了を確認した。責務分離を1つのローカルコミットへまとめ、push・Release・実利用先deployは行わない。
 
 ## 2026-11-09 管理者要求の宣言（0.5.0）
@@ -15,7 +29,7 @@
 - mainでpull --ff-only後、extension.jsonへrequestAdministrator=trueを追加し、最低本体版を0.195.0へ更新。本体の必要プロセス管理者起動がONならこのAppletを管理者起動し、OFFなら通常権限で動かす。コマンド/設定ID・実行処理は維持。最低本体版変更により0.4.0→0.5.0。
 - 発行前レビューで本体の宣言検証・プロセス選択とmanifest/csproj/使用説明の整合を確認。標準回帰51/51とupdate-shortcut-manifest.ps1 -Check（73ショートカット/95固定コマンド）成功。`.artifacts/elevation-regression.log`、`.artifacts/elevation-package-build.log`に記録。
 - `.artifacts/elevation-package`と発行済みDLLのSHA256一致を確認。固定本体0.195.0でOFF時の通常起動、ON時の管理者起動、追加UACなしの通常再起動、管理者の試験用ウィンドウに対する実移動、OFF後の通常実行に成功。本体の`.artifacts/elevation-20261109/published-elevated-ui.log`と`.artifacts/elevated-processes-ui-1794182281266/result.json`に記録。操作コードは未変更のため標準51件を再利用し、宣言/起動の差は発行後の実機試験で確認した。
-- publish.bat成功。`A:\40.ARTIFACT\Applet.WindowsTools.at365\Applet.WindowsTools.at365`とupdate.zip/update.jsonを0.5.0/最低本体0.195.0で発行。ZIP 33,302 bytes、SHA256 `c643b31607c248ce8fb03dc95f05b0ff34c307cce5fa79162beda111cc5de296`。配布manifestの要求、DLL版、feedのsize/hash、ZIPの3ファイルと発行フォルダーの一致を確認。実RDP/secure desktopは対象外。実利用先deploy・push・Releaseは行っていない。
+- publish.bat成功。`<PUBLISH_ROOT>\Applet.WindowsTools.at365\Applet.WindowsTools.at365`とupdate.zip/update.jsonを0.5.0/最低本体0.195.0で発行。ZIP 33,302 bytes、SHA256 `c643b31607c248ce8fb03dc95f05b0ff34c307cce5fa79162beda111cc5de296`。配布manifestの要求、DLL版、feedのsize/hash、ZIPの3ファイルと発行フォルダーの一致を確認。実RDP/secure desktopは対象外。実利用先deploy・push・Releaseは行っていない。
 
 ## 2026-11-08 プロセス指定・リモートデスクトップの最小化と復元（0.4.0）
 
@@ -44,7 +58,7 @@
 
 ## 2026-11-03 開発用配置スクリプトの除去
 
-- deployment一式と40.ARTIFACT内の配置用スクリプト・記入例・配置先設定を、存在する範囲で削除した。publishから専用コピー処理を外し、開発文書と不要なGit除外規則を整理した。
+- deployment一式と<PUBLISH_ROOT>内の配置用スクリプト・記入例・配置先設定を、存在する範囲で削除した。publishから専用コピー処理を外し、開発文書と不要なGit除外規則を整理した。
 - 差分レビューで既存のビルドと更新ZIP/JSON生成を保持していることを確認した。変更スクリプトの構文・現行の廃止ファイル参照・git diff --checkと、本体を含む全9repoの発行先計算を確認した。発行先の配置ツール以外のファイルは削除前後のSHA256が一致した。
 - 製品コード・manifest・依存・設定/保存仕様と配布payloadは変更していない。開発用配置ツールの整理として製品版更新・再ビルド・再発行なし。製品回帰・GUI・実利用先配置・commit・push・Releaseは実施していない。共通の削除一覧・ハッシュ・検証結果は../AppDock.at365/.artifacts/deploy-removal-20261103/を参照する。過去の検証記録は履歴として保持する。
 
@@ -66,7 +80,7 @@
 - main `3d59e934df296f32f3a4fbd86899e4038deff23e` / cleanから開始し、`pull --ff-only` はAlready up to date。「コマンドの動作」のdescriptionを削除し、「セキュリティ」の自動ロック説明と切替タグを `autoLockEnabled.description` へ移動した。両セクションともdescriptionなしとし、今後別機能を配下へ追加できる分類にした。項目にある消灯タグと移動した自動ロックタグの2件を保持した。
 - 設定3件・固定92コマンド・C#実行処理・最低本体版・保存仕様は不変。発行前レビューで阻害事項なし。表示メタデータの修正のため0.2.9→0.2.10へパッチ更新し、manifestとプロジェクトの版をそろえた。開発ガイドへ分類と項目説明の使い分けを記載した。
 - 直前の模擬API回帰43/43を再利用。全C#実装・試験とSDK定義のSHA256一致、共通SDKの基点 `bc5431b` からのソース差分なし・未追跡ソースなしを確認した。再利用元の完全ログhashと判断は `.artifacts/settings-descriptions-20261030/review.json`。manifest生成チェックは今回も成功した。
-- 標準 `publish.bat` で40.ARTIFACTへ発行成功。ソース/配布manifest、feed/ZIP、ZIP内3ファイルと配布フォルダーのsize/SHA256、DLL版0.2.10を照合した。ZIPは31,945 bytes / SHA256 `99535ff99cbcaa41c1221d43fcbb79f2a8dbf345078c065c7ae07fe6b54d67de`、DLL SHA256 `8b86831ed4c37d0de75b2f13443cdf02b2a28ecfb5ec45272fb203cf0d7477e4`。
+- 標準 `publish.bat` で<PUBLISH_ROOT>へ発行成功。ソース/配布manifest、feed/ZIP、ZIP内3ファイルと配布フォルダーのsize/SHA256、DLL版0.2.10を照合した。ZIPは31,945 bytes / SHA256 `99535ff99cbcaa41c1221d43fcbb79f2a8dbf345078c065c7ae07fe6b54d67de`、DLL SHA256 `8b86831ed4c37d0de75b2f13443cdf02b2a28ecfb5ec45272fb203cf0d7477e4`。
 - 固定本体0.104.2と発行Appletの隔離GUI4群が成功。自動ロック説明が対象項目のfieldset内にあること、既存値、Enter/blur保存・Escape取消・実プロセス再起動保持を確認した。明るい広幅/暗い狭幅の画面画像で分類の説明がなく、項目に説明があることも確認した。本体最小幅による実際の狭幅900、本文の幅/scrollWidthは500/500で、長い説明の横はみ出しはなし。実消灯・ロック・保護キーの送信/登録は行っていない。
 - 証跡は `.artifacts/settings-descriptions-20261030/` の変更前入力・レビュー・完全ログ・`published.json`・`ui-result.json`・画面画像。最終照合とstage/commitは `validation.json`・`stage.json`・`commit.json` に保存する。GUIの先頭チェック名は直前の試験から引き継いだ名称だが、今回のタグ数は2件としてmanifestと実画面を確認した。成功profile1件を保持し、削除0件。push・Release・実利用先deployは行わない。
 
@@ -76,7 +90,7 @@
 - 説明に消灯・消灯予約取消・自動ロック切替の3つの `[command:ID]` を埋め込んだ。タグの解釈・リンク描画・パレット初期選択は本体側の設計段階のため、このAppletへ独自実装していない。発行済み本体0.104.2では原文のタグ表示となることをGUIで確認した。最低本体版0.85.9を保ち、設定キー3件・型/範囲/既定値/公開範囲・セクションIDと所属・固定コマンド92件・全C#実行処理が変更前と同じことを照合した。
 - 発行前に差分・タグ参照先・保存/監視への影響・必要な検証をレビューし、阻害事項なし。設定や保存ファイルの追加削除と破壊的変更がないため0.2.8→0.2.9のパッチ更新とし、manifestとプロジェクトの版をそろえた。利用文書と開発ガイドも更新した。レビューは `.artifacts/settings-layout-20261030/review.json`。
 - .NET SDK 10.0.403で標準模擬API回帰 **43/43**、Windows PowerShell 5.1のmanifest生成チェック成功。取消・無操作判定・自動ロック・92件の登録/設定更新等を確認し、実消灯・実ロック・実キー送信は行っていない。コミット前の判定では、この依頼内の成功結果を再利用し、無関係な本体全回帰・nativeウィンドウ操作試験は実行していない。
-- `publish.bat` で `A:\40.ARTIFACT\Applet.WindowsTools.at365` へ発行成功。配布manifestとソース、ZIP内3ファイルと配布フォルダーのsize/SHA256、feedの版/最低本体/ZIP size/hash、DLLのProductVersionを照合した。ZIPは31,959 bytes / SHA256 `e19c75035cd665fe65f2bbf63d069d8dcf428a73cf86688b8c0ce8b4fd06ea9d`、DLLは `a8a2db14f6f137ccb9a8129335fc5bd2abcdc43e143470ba371475e6e29db0af`。既存のdeployスクリプト・利用者設定は標準の保持規則に従った。
+- `publish.bat` で `<PUBLISH_ROOT>\Applet.WindowsTools.at365` へ発行成功。配布manifestとソース、ZIP内3ファイルと配布フォルダーのsize/SHA256、feedの版/最低本体/ZIP size/hash、DLLのProductVersionを照合した。ZIPは31,959 bytes / SHA256 `e19c75035cd665fe65f2bbf63d069d8dcf428a73cf86688b8c0ce8b4fd06ea9d`、DLLは `a8a2db14f6f137ccb9a8129335fc5bd2abcdc43e143470ba371475e6e29db0af`。既存のdeployスクリプト・利用者設定は標準の保持規則に従った。
 - 本体0.104.2の固定配布物と発行Appletを専用profileへコピーしてGUI **4群** が成功。既存の7秒/37分/無効から開始し、13秒のEnter保存・19秒入力のEscape取消・41分のblur保存、無関係な設定値の保持、実プロセス再起動後の復元を確認した。明るい広幅/暗い狭幅も確認し、内容幅/scrollWidthは880/880と500/500で横はみ出しなし。狭幅のWindow指定760は本体の最小幅で900になった条件として扱う。Pause/F13〜F24のOS送信・登録はなし。初回は既定値falseを保存から省く仕様に対する試験の期待値で失敗し、有効値で照合するよう試験だけを修正して成功した。初回ログは `attempt-1/` に保持した。
 - 証跡は `.artifacts/settings-layout-20261030/`。変更前37入力・依頼内40入力のSHA256、回帰/生成チェック/発行/GUIの完全ログ、`checks.json`・`published.json`・`ui-result.json`、画面画像を保持する。固定EXEのコピー元/コピー先SHA256は `f163f9a646276f38e6dd3046773f1ec0a4fed62fafaa2907df7557ff9faca834` で一致。最終の文書/入力/ログとstage/commitの照合は `validation.json`・`stage.json`・`commit.json` に記録する。
 - 関連する開発・検証ファイルだけをコミット対象とし、push・GitHub Release・実利用先deployは行わない。GUIプロセスは正常終了し、今回の成功profile1件と解決済み失敗ログ・再利用資料を保持した。既存の別作業の生成物は削除していない。本体の共通リンク機能と設計worktreeは変更していない。
@@ -91,7 +105,7 @@
 ## 2026-10-29: Applet情報のアイコンとキャッチコピー 0.2.8
 
 - main/追跡先とcleanを確認し、通常環境のpull --ff-only後に、manifestの任意表示情報 `icon: settings` と `tagline: 毎日のWindows操作を、もっと軽やかに。` を設定。設定・コマンド・保存・権限・最低本体版は変更せず、0.2.7→0.2.8のパッチ更新として関連する版の正本を揃えた。発行前にmetadataと版の差分をレビューし、阻害事項なし。
-- 標準publish.batで40.ARTIFACTへ発行。配置manifest/ZIP内manifest/feedのID・版・icon/tagline、ZIPのサイズ/SHA256を照合し成功。native/.NETはProductVersionも一致。本体0.101.6の固定EXEへ発行物をコピーし、停止状態で情報パネルの表示を確認した。通常のApplet起動や外部サービス・実入力は実行していない。
+- 標準publish.batで<PUBLISH_ROOT>へ発行。配置manifest/ZIP内manifest/feedのID・版・icon/tagline、ZIPのサイズ/SHA256を照合し成功。native/.NETはProductVersionも一致。本体0.101.6の固定EXEへ発行物をコピーし、停止状態で情報パネルの表示を確認した。通常のApplet起動や外部サービス・実入力は実行していない。
 - 共通の入力・完全ログ・配布照合は`../AppDock.at365/.artifacts/applet-branding-20261029/`、本体の`VERIFICATION.md`、本repoの`.artifacts/applet-branding-20261029/validation.json`を参照。機能別の標準全回帰は今回実行せず、表示情報と配布の影響に必要な範囲を検証した。既存の再利用資料を保持し、今回の整理による削除なし。コミット/プッシュ/Release/実利用deployは行っていない。
 
 ## 2026-10-26: 全変更Appletのローカルコミット照合
@@ -105,7 +119,7 @@
 - 既存のdisplayName変更を確認。表示名はWindowsTools、内部name／id／entry・設定・公開APIは保持。開始時はmainで未コミット変更があったため、自動pull／stashは行わず既存差分を保持した。通常修正としてパッチ番号を1つ更新。
 - 発行前にmanifest／版／発行スクリプトと影響先をレビューし、阻害指摘なし。レビュー記録は.artifacts/displayname-publish-20261026/review.json。
 - Release構成の模擬APIによる既存回帰43/43成功。発行DLLの版一致と隔離ホストでの起動／停止成功。キー送信・電源・ロック等の実操作は実行していない。
-- publish.batは終了コード0。40.ARTIFACTの配布manifest／実行ファイル／update.jsonの版、ZIPの全エントリー・サイズ・SHA256と配布フォルダーの一致を確認。package-result.jsonに記録。既存deploy関連ファイルを保持。
+- publish.batは終了コード0。<PUBLISH_ROOT>の配布manifest／実行ファイル／update.jsonの版、ZIPの全エントリー・サイズ・SHA256と配布フォルダーの一致を確認。package-result.jsonに記録。既存deploy関連ファイルを保持。
 - 固定の発行済みAppDock 0.94.4へ4つの発行物をそのままコピーし、コピーhash一致、snapshotの内部名／表示名／版と管理画面の4行を確認。Watch／WebBrowserTools／WindowsToolsの起動・停止、ホストの終了コード0を確認。共通証跡は../Applet.WebBrowserTools.at365/.artifacts/displayname-publish-20261026/のpublished-smoke.cjs、smoke-result.json、displaynames.png、host-inputs.json。参照ソースはAppDock main 0.94.3で、固定EXEは0.94.4。
 - 各repoの同名.artifactsフォルダーへ入力hash、コマンド／終了コード、完全ログとそのhashを保存。検証後の製品入力は一致。使用方法と設計の版表記のみの文書修正は製品試験へ影響しない。ホスト全回帰／旧GUI全回帰／実ブラウザーや物理入力は変更範囲外として未実施。
 - 整理は各.artifacts直下を列挙してcleanup.jsonへ記録。今回の試験は同じ方式の成功1回として保持。他の古い資料は参照・実行方式・所有が確定しないため保持、削除0件。隔離ホストとAppletは終了済み。commit／push／Release／実利用deployなし。
@@ -123,7 +137,7 @@
 - .NET回帰 **43/43**、Windows PowerShell 5.1のmanifest生成チェック、発行DLLの実ExtensionHost／模擬API試験成功。最大化状態の両分岐・反復・元のHWND固定、取消／無効対象の非実行、9ウィンドウコマンドの設定更新後保持を確認した。入力73件とプロセス5件は模擬委譲を確認し、実電源操作・ロック・保護キーの実入力は行っていない。
 - 発行DLLを専用WinFormsで実行する通常前面／ジェスチャー対象の両native smokeが成功。最大化／復元を2往復して元サイズに戻り、別ウィンドウが前面でも開始対象だけを操作すること、別ウィンドウの位置・サイズとカーソルを保つことを確認。初回は最大化後も別ウィンドウが前面という試験の追加仮定で失敗したが、Windowsの通常の最大化要求で対象が前面になることをHWNDログで確認し、対象・サイズ・カーソルの検査へ修正した。製品処理の変更や前面状態の強制復旧は追加していない。
 - 固定AppDock EXEと最終Appletの隔離GUI **8群** が成功（`.artifacts/host-1792972310445/result.json`）。新コマンドの名前・説明・IDのパレット表示、MCPで全92件の公開／説明／割当候補と無効割当のdryRun・保存・取得・削除、既存割当保持・安全な取消実行／実行許可拒否を確認。試験の旧ショートカット画面selectorを現行パレット表示へ更新し、`startupReady`待ちを追加して再検証した。初回失敗ログも保持。Terminalの新規ウィンドウと終了選択画面は既存試験で開いて取消済み。ホスト正常終了0、実利用設定・実利用先deployなし。
-- `publish.bat`で標準の`A:\40.ARTIFACT\Applet.WindowsTools.at365`へ発行成功。DLL版0.2.6.0、DLL SHA256 `bde39018fdeed75ebf2465a5d5c9c34e8a2248b9536636d3bc599190b6a085c1`。ZIP **31,866 bytes**／SHA256 `7a2cbe61c8b20c6372b881bbbb681f2c496d819ce7f64d3cebaf52b7cc679d29`。ZIP内3ファイル・配布manifest／DLL／deps・feedの版／最低本体／size／hash一致。使用した固定本体EXE SHA256は`fbd8d6aefdc6588519088b246f514dcbe79cf06b2409bd430fdef01c9057d2d9`。
+- `publish.bat`で標準の`<PUBLISH_ROOT>\Applet.WindowsTools.at365`へ発行成功。DLL版0.2.6.0、DLL SHA256 `bde39018fdeed75ebf2465a5d5c9c34e8a2248b9536636d3bc599190b6a085c1`。ZIP **31,866 bytes**／SHA256 `7a2cbe61c8b20c6372b881bbbb681f2c496d819ce7f64d3cebaf52b7cc679d29`。ZIP内3ファイル・配布manifest／DLL／deps・feedの版／最低本体／size／hash一致。使用した固定本体EXE SHA256は`fbd8d6aefdc6588519088b246f514dcbe79cf06b2409bd430fdef01c9057d2d9`。
 - 証跡: `.artifacts/toggle-maximize-20261026/`のreview.json、published.json、validation.json、入力hash／環境／各試験ログと、上記GUIフォルダー。実装後の入力差分はnative試験の仮定修正、GUI試験の起動待ち／selector修正と、旧版に限定していた設計記述の整理のみ。製品・SDK入力と発行DLLは不変。未変更本体／兄弟Appletの全回帰、物理ジェスチャー入力、他アプリ／混在DPIの実機確認は追加していない。既存の検証・再利用資料、失敗／状態不明フォルダーを保護し、今回の生成物削除0件。コミット・push・Releaseなし。利用先へ配置した後、AppDock再起動で公開宣言を反映する。
 
 ## 2026-10-23: 固定91コマンドのMCP公開（0.2.5）
@@ -156,14 +170,14 @@
 - .NET回帰 **42/42**、本体の型検査・入力/プロセス関連JS **10/10** が成功。発行DLLを実ExtensionHostで読み込み、91件の登録と説明、73件の入力委譲と5件のプロセス委譲を模擬APIで確認。設定変更・停止・再起動・EOF終了も成功した。シャットダウン/s /t 0・再起動/r /t 0、サインアウト/l、/fなし、取消・停止後の非実行、API拒否時の非再送を模擬試験で確認した。
 - 最終AppDock 0.85.9 EXEとAppletを隔離コピーしたGUIで、91件の表示/説明・外部非公開、旧設定/割当保持、MCP設定反映・権限/入力拒否・dryRun/競合、消灯予約の取消・Applet再起動/停止が成功。追加した終了画面コマンドを実行し、「Windows のシャットダウン」の選択欄・OK・キャンセルを確認。新しく現れた同名ダイアログだけをWM_CLOSEでキャンセルし、閉じたことを確認した。画像は `.artifacts/host-1792760191365/shutdown-dialog.png`。
 - 最終固定EXEの入力試験 **7群** とsmoke成功。新しい7つのメディア/音量キーを、キーとWM_APPCOMMANDを処理する専用WinFormsへ実送信。前面変更拒否・許可撤回による未送信処理の取消・既存Node Applet/カスタムコマンド経路・記号配列・連続ジェスチャーの待機抑制維持も確認した。再生アプリ・実スピーカーの反応、実シャットダウン・再起動・サインアウト、ターミナルの実起動は未確認。
-- 発行済みupdate.zipは30,275 bytes／SHA256 `6233e3a2d3647dfc43552417d7445376b6b828047ea8ad3b51f0e043007cd851`。feed、ZIP内manifest（0.2.3/minimumHostVersion 0.85.9/91件）、DLLとdepsが一致。DLL SHA256 `a7af7ad863738a0510a65498d1e7b1879aa3fd208bbb4d3d1efa83437114df86`。標準の40.ARTIFACTへ発行し、実利用先deploy・commit・push・Releaseは行っていない。
+- 発行済みupdate.zipは30,275 bytes／SHA256 `6233e3a2d3647dfc43552417d7445376b6b828047ea8ad3b51f0e043007cd851`。feed、ZIP内manifest（0.2.3/minimumHostVersion 0.85.9/91件）、DLLとdepsが一致。DLL SHA256 `a7af7ad863738a0510a65498d1e7b1879aa3fd208bbb4d3d1efa83437114df86`。標準の<PUBLISH_ROOT>へ発行し、実利用先deploy・commit・push・Releaseは行っていない。
 - 証跡: `.artifacts/system-commands-20261023/validation.json`、完全ログ・入力hash・review.json・published.json。固定GUIは `.artifacts/host-1792760191365/result.json`、共通入力は本体 `.artifacts/native-input-ui-1792760127527/result.json`。制限内の.NET/EXE spawn失敗はログを保持し、同じ処理を通常ユーザー実行して成功。旧GUIの一覧/タブ参照、既定falseの省略、WinFormsのMediaPreviousTrack表記、DPI付き画像取得は試験だけ修正して成功した。発行後の製品変更なし。既存/途中失敗と再利用資料を保持し、状態不明資料は削除せず、今回のテストフォルダー削除0件。
 
 ## 2026-10-19: GitHub更新元の新アカウント対応（0.2.2）
 
 - 開始時main／clean、現在のorigin/mainからpull --ff-only成功（Already up to date）。更新元を`yukichi-7sai/Applet.WindowsTools.at365`へ統一。既存updateRepositoryの旧アカウント名を置換。.NET発行ビルドとruntime/manifestの版一致を確認。
 
-- 発行前レビューは指摘なし。設定項目・保存ファイル・公開APIの追加削除なしのためパッチ更新。既存publish.batで自身の40.ARTIFACT配下へ発行成功。ZIP/feed/同梱manifestのID・版・size・SHA256・runtimeの存在が一致。
+- 発行前レビューは指摘なし。設定項目・保存ファイル・公開APIの追加削除なしのためパッチ更新。既存publish.batで自身の<PUBLISH_ROOT>配下へ発行成功。ZIP/feed/同梱manifestのID・版・size・SHA256・runtimeの存在が一致。
 
 - 最終AppDock 0.62.4 EXE（SHA256 043d72acd4f4176d0417bbc4166a111cecc5aaa7e8740baf21b8d6647b0e85ab）と最終Applet一式を隔離コピー。全6Appletを停止した状態で、保存済み旧指定の保持、新しい既定値の説明、版表示、「既定に戻す」後の画面／メモリ／settings.jsonの一致、停止状態維持を各Appletで確認。正常終了0。
 
