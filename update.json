@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "applet",
+  "id": "at365.windows-tools",
+  "version": "0.6.0",
+  "minimumHostVersion": "0.209.0",
+  "release": {
+    "tag": "v0.6.0",
+    "publishedAt": "2026-11-16T22:31:52Z"
+  },
+  "payload": {
+    "file": "update.zip",
+    "sha256": "c6f82021b92c50c39685cb03005e1980f4c7e769e3c2c5e5f0c98fc8101577d2",
+    "size": 24483,
+    "format": "zip",
+    "url": "https://github.com/yukichi-7sai/Applet.WindowsTools.at365/releases/download/v0.6.0/update.zip"
+  }
+}
